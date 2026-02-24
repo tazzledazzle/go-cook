@@ -1,4 +1,4 @@
-module design-kube
+module github.com/tazzledazzle/go-cook/design-kube
 
 go 1.24.0
 
