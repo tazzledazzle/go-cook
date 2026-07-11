@@ -20,9 +20,9 @@
 
 ### Peer Wire Protocol
 
-- [ ] **PEER-01**: Client sends and receives 68-byte BitTorrent handshake (pstr, reserved, info_hash, peer_id)
-- [ ] **PEER-02**: Client verifies peer's info_hash matches local hash; rejects mismatch
-- [ ] **PEER-03**: Client reads length-prefixed messages (keepalive, choke, unchoke, interested, bitfield, have, request, piece)
+- [x] **PEER-01**: Client sends and receives 68-byte BitTorrent handshake (pstr, reserved, info_hash, peer_id)
+- [x] **PEER-02**: Client verifies peer's info_hash matches local hash; rejects mismatch
+- [x] **PEER-03**: Client reads length-prefixed messages (keepalive, choke, unchoke, interested, bitfield, have, request, piece)
 - [ ] **PEER-04**: Client sends Interested and waits for Unchoke before requesting blocks
 
 ### Pieces & Verification
@@ -86,9 +86,9 @@
 | TRCK-01 | Phase 2 | Complete |
 | TRCK-02 | Phase 2 | Complete |
 | TRCK-03 | Phase 2 | Complete |
-| PEER-01 | Phase 3 | Pending |
-| PEER-02 | Phase 3 | Pending |
-| PEER-03 | Phase 3 | Pending |
+| PEER-01 | Phase 3 | Complete |
+| PEER-02 | Phase 3 | Complete |
+| PEER-03 | Phase 3 | Complete |
 | PEER-04 | Phase 4 | Pending |
 | PIEC-01 | Phase 4 | Pending |
 | PIEC-02 | Phase 4 | Pending |
