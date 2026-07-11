@@ -56,3 +56,56 @@ func TestPiece_completeWhenAllBlocksReceived(t *testing.T) {
 		t.Error("Complete() = false, want true")
 	}
 }
+
+func minimalPieceHash() [20]byte {
+	return [20]byte{
+		0x98, 0xaa, 0xed, 0x44, 0x27, 0x21, 0xe0, 0xce,
+		0xcd, 0xd9, 0xbf, 0x7b, 0x8c, 0xbb, 0x3e, 0x1f,
+		0xf1, 0xb1, 0x53, 0x6a,
+	}
+}
+
+func fillMinimalPiece(p *Piece) {
+	content := []byte("hello world\n")
+	copy(p.data, content)
+	p.received[0] = true
+}
+
+func TestPieceValidate_matchesGoldenHash(t *testing.T) {
+	p := NewPiece(16384)
+	fillMinimalPiece(p)
+
+	if !p.Validate(minimalPieceHash()) {
+		t.Error("Validate() = false, want true for golden minimal piece hash")
+	}
+}
+
+func TestPieceValidate_rejectsCorruptData(t *testing.T) {
+	p := NewPiece(16384)
+	fillMinimalPiece(p)
+	p.data[0] ^= 0xff
+
+	if p.Validate(minimalPieceHash()) {
+		t.Error("Validate() = true, want false for corrupt data")
+	}
+}
+
+func TestPieceReset_clearsState(t *testing.T) {
+	p := NewPiece(16384)
+	fillMinimalPiece(p)
+	p.data[0] ^= 0xff
+
+	if p.Validate(minimalPieceHash()) {
+		t.Fatal("Validate() = true before reset on corrupt data")
+	}
+
+	p.Reset()
+	if p.Complete() {
+		t.Error("Complete() = true after Reset(), want false")
+	}
+	for i, b := range p.Bytes() {
+		if b != 0 {
+			t.Fatalf("Bytes()[%d] = %d after Reset(), want 0", i, b)
+		}
+	}
+}
