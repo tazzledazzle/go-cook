@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-07-11T04:23:32.637Z"
+last_updated: "2026-07-11T04:26:59.166Z"
 progress:
   total_phases: 6
-  completed_phases: 1
-  total_plans: 6
-  completed_plans: 3
-  percent: 17
+  completed_phases: 2
+  total_plans: 10
+  completed_plans: 6
+  percent: 33
 ---
 
 # State: Learn You a BitTorrent Client
@@ -29,7 +29,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-10)
 |-------|------|--------|-------|
 | 1 | Bencode & Torrent Parsing | ✓ Complete | 3/3 |
 | 2 | Tracker Announce | ✓ Complete | 3/3 |
-| 3 | Peer Handshake & Messages | ○ Pending | 0/0 |
+| 3 | Peer Handshake & Messages | ○ Planned | 0/4 |
 | 4 | Download One Piece | ○ Pending | 0/0 |
 | 5 | Full Download & Progress CLI | ○ Pending | 0/0 |
 | 6 | Graceful Shutdown | ○ Pending | 0/0 |
