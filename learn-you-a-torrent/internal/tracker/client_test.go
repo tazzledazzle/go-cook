@@ -22,7 +22,7 @@ func minimalTorrentPath(t *testing.T) string {
 
 func TestClient_Announce_mockTracker(t *testing.T) {
 	compact := []byte{127, 0, 0, 1, 0x1a, 0xe1}
-	responseBody := append([]byte("d6:peers6:"), compact...)
+	responseBody := append([]byte("d5:peers6:"), compact...)
 	responseBody = append(responseBody, 'e')
 
 	var gotCompact bool
