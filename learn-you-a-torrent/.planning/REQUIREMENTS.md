@@ -83,9 +83,9 @@
 | BENC-02 | Phase 1 | Complete |
 | TORR-01 | Phase 1 | Complete |
 | TORR-02 | Phase 1 | Complete |
-| TRCK-01 | Phase 2 | Pending |
-| TRCK-02 | Phase 2 | Pending |
-| TRCK-03 | Phase 2 | Pending |
+| TRCK-01 | Phase 2 | Complete |
+| TRCK-02 | Phase 2 | Complete |
+| TRCK-03 | Phase 2 | Complete |
 | PEER-01 | Phase 3 | Pending |
 | PEER-02 | Phase 3 | Pending |
 | PEER-03 | Phase 3 | Pending |

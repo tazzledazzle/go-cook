@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-10)
 
 **Core value:** Download a single-file torrent with verified pieces and understand every layer
-**Current focus:** Phase 2 — Tracker Announce (strict TDD)
+**Current focus:** Phase 3 — Peer Handshake & Messages
 
 ## Phase Status
 
 | Phase | Name | Status | Plans |
 |-------|------|--------|-------|
 | 1 | Bencode & Torrent Parsing | ✓ Complete | 3/3 |
-| 2 | Tracker Announce | ○ Planned | 0/3 |
+| 2 | Tracker Announce | ✓ Complete | 3/3 |
 | 3 | Peer Handshake & Messages | ○ Pending | 0/0 |
 | 4 | Download One Piece | ○ Pending | 0/0 |
 | 5 | Full Download & Progress CLI | ○ Pending | 0/0 |
@@ -36,7 +36,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-10)
 
 ## Active Work
 
-Phase 1 complete — bencode decoder and torrent parser with golden info hash tests passing.
+Phase 2 complete — tracker announce URL, compact peer parsing, and mock HTTP integration (strict TDD with RED/GREEN commits).
 
 ## Notes
 
