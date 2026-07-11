@@ -10,6 +10,14 @@ import (
 
 // DownloadPiece downloads a single piece from conn, validates it, and writes to w.
 func DownloadPiece(conn *peer.Connection, tor *torrent.Torrent, index int, w *file.Writer) error {
+	if err := PrepareForDownload(conn); err != nil {
+		return err
+	}
+	return DownloadPieceData(conn, tor, index, w)
+}
+
+// PrepareForDownload waits for unchoke and sends interested.
+func PrepareForDownload(conn *peer.Connection) error {
 	unchoked := false
 	for !unchoked {
 		msg, err := conn.ReadMessage()
@@ -20,11 +28,14 @@ func DownloadPiece(conn *peer.Connection, tor *torrent.Torrent, index int, w *fi
 			unchoked = true
 		}
 	}
-
 	if err := conn.SendInterested(); err != nil {
 		return fmt.Errorf("download piece: send interested: %w", err)
 	}
+	return nil
+}
 
+// DownloadPieceData downloads one piece on a prepared connection.
+func DownloadPieceData(conn *peer.Connection, tor *torrent.Torrent, index int, w *file.Writer) error {
 	pieceLen := int(tor.Info.PieceLength)
 	piece := NewPiece(pieceLen)
 

@@ -4,25 +4,28 @@ import "sync"
 
 // Manager tracks which torrent pieces have been downloaded and verified.
 type Manager struct {
-	total int
-	done  map[int]bool
-	mu    sync.Mutex
+	total   int
+	done    map[int]bool
+	claimed map[int]bool
+	mu      sync.Mutex
 }
 
 // NewManager creates a manager for total pieces.
 func NewManager(total int) *Manager {
 	return &Manager{
-		total: total,
-		done:  make(map[int]bool),
+		total:   total,
+		done:    make(map[int]bool),
+		claimed: make(map[int]bool),
 	}
 }
 
-// NextMissing returns the lowest-index piece not yet marked complete.
+// NextMissing claims the lowest-index piece not yet complete.
 func (m *Manager) NextMissing() (int, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	for i := 0; i < m.total; i++ {
-		if !m.done[i] {
+		if !m.done[i] && !m.claimed[i] {
+			m.claimed[i] = true
 			return i, true
 		}
 	}
@@ -34,6 +37,7 @@ func (m *Manager) MarkComplete(index int) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.done[index] = true
+	delete(m.claimed, index)
 }
 
 // Complete reports whether all pieces are downloaded.
