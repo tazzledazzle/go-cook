@@ -73,3 +73,40 @@ func ReadMessage(r io.Reader) (Message, error) {
 	}
 	return msg, nil
 }
+
+// BuildRequest constructs a request message for a piece block.
+func BuildRequest(index, begin, length uint32) Message {
+	payload := make([]byte, 12)
+	binary.BigEndian.PutUint32(payload[0:4], index)
+	binary.BigEndian.PutUint32(payload[4:8], begin)
+	binary.BigEndian.PutUint32(payload[8:12], length)
+	return Message{ID: MsgRequest, Payload: payload}
+}
+
+// ParseRequest extracts index, begin, and length from a request message.
+func ParseRequest(msg Message) (index, begin, length uint32, err error) {
+	if msg.ID != MsgRequest {
+		return 0, 0, 0, fmt.Errorf("peer: expected request message, got id %d", msg.ID)
+	}
+	if len(msg.Payload) != 12 {
+		return 0, 0, 0, fmt.Errorf("peer: request payload length %d, want 12", len(msg.Payload))
+	}
+	index = binary.BigEndian.Uint32(msg.Payload[0:4])
+	begin = binary.BigEndian.Uint32(msg.Payload[4:8])
+	length = binary.BigEndian.Uint32(msg.Payload[8:12])
+	return index, begin, length, nil
+}
+
+// ParsePiece extracts index, begin, and block data from a piece message.
+func ParsePiece(msg Message) (index, begin uint32, block []byte, err error) {
+	if msg.ID != MsgPiece {
+		return 0, 0, nil, fmt.Errorf("peer: expected piece message, got id %d", msg.ID)
+	}
+	if len(msg.Payload) < 8 {
+		return 0, 0, nil, fmt.Errorf("peer: piece payload too short")
+	}
+	index = binary.BigEndian.Uint32(msg.Payload[0:4])
+	begin = binary.BigEndian.Uint32(msg.Payload[4:8])
+	block = append([]byte(nil), msg.Payload[8:]...)
+	return index, begin, block, nil
+}

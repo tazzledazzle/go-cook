@@ -32,3 +32,18 @@ func (c *Connection) PerformHandshake() error {
 func (c *Connection) ReadMessage() (Message, error) {
 	return ReadMessage(c.conn)
 }
+
+// SendInterested sends an interested message to the peer.
+func (c *Connection) SendInterested() error {
+	return WriteMessage(c.conn, Message{ID: MsgInterested})
+}
+
+// SendRequest sends a block request to the peer.
+func (c *Connection) SendRequest(index, begin, length uint32) error {
+	return WriteMessage(c.conn, BuildRequest(index, begin, length))
+}
+
+// WriteMessage writes a length-prefixed message to the peer.
+func (c *Connection) WriteMessage(msg Message) error {
+	return WriteMessage(c.conn, msg)
+}
