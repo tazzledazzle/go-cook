@@ -101,6 +101,9 @@ func TestDownloadPiece0_fromMockPeer(t *testing.T) {
 	if err := DownloadPiece(conn, tor, 0, writer); err != nil {
 		t.Fatalf("DownloadPiece() error = %v", err)
 	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
 
 	got, err := os.ReadFile(filepath.Join(dir, "test.txt"))
 	if err != nil {

@@ -52,7 +52,7 @@ func DownloadPiece(conn *peer.Connection, tor *torrent.Torrent, index int, w *fi
 	if err := w.WritePiece(index, piece.Bytes()); err != nil {
 		return fmt.Errorf("download piece: write file: %w", err)
 	}
-	return w.Close()
+	return nil
 }
 
 func readPieceBlock(conn *peer.Connection, index, begin int, piece *Piece) error {
