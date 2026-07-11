@@ -39,15 +39,15 @@
 
 ### CLI & Orchestration
 
-- [ ] **CLI-01**: `torrent download <file.torrent>` starts download to current directory
-- [ ] **CLI-02**: Progress output shows percent complete, download speed, and connected peer count
+- [x] **CLI-01**: `torrent download <file.torrent>` starts download to current directory
+- [x] **CLI-02**: Progress output shows percent complete, download speed, and connected peer count
 - [ ] **CLI-03**: Ctrl+C triggers graceful shutdown (stop peers, flush file, exit cleanly)
 
 ### Testing
 
 - [ ] **TEST-01**: Each package has unit tests written TDD-first (test before implementation)
 - [ ] **TEST-02**: Synthetic `.torrent` fixtures in testdata/ for CI without network
-- [ ] **TEST-03**: Manual end-to-end verification documented against a public Linux ISO torrent
+- [x] **TEST-03**: Manual end-to-end verification documented against a public Linux ISO torrent
 
 ## v2 Requirements
 
@@ -96,12 +96,12 @@
 | PIEC-04 | Phase 4 | Complete |
 | FILE-01 | Phase 4 | Complete |
 | FILE-02 | Phase 4 | Complete |
-| CLI-01 | Phase 5 | Pending |
-| CLI-02 | Phase 5 | Pending |
+| CLI-01 | Phase 5 | Complete |
+| CLI-02 | Phase 5 | Complete |
 | CLI-03 | Phase 6 | Pending |
 | TEST-01 | All phases | Pending |
 | TEST-02 | Phase 1 | Complete |
-| TEST-03 | Phase 5 | Pending |
+| TEST-03 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 22 total
