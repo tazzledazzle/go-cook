@@ -1,6 +1,10 @@
 package pieces
 
-import "fmt"
+import (
+	"bytes"
+	"crypto/sha1"
+	"fmt"
+)
 
 const BlockSize = 1 << 14
 
@@ -48,4 +52,18 @@ func (p *Piece) Complete() bool {
 // Bytes returns the full piece buffer.
 func (p *Piece) Bytes() []byte {
 	return p.data
+}
+
+// Validate checks the piece buffer against the expected SHA1 hash.
+func (p *Piece) Validate(expected [20]byte) bool {
+	sum := sha1.Sum(p.data)
+	return bytes.Equal(sum[:], expected[:])
+}
+
+// Reset clears piece data and block tracking for re-download.
+func (p *Piece) Reset() {
+	for i := range p.data {
+		p.data[i] = 0
+	}
+	p.received = make(map[int]bool)
 }
