@@ -62,7 +62,11 @@ func (d *Downloader) Download(ctx context.Context, t *torrent.Torrent, dir strin
 		go func(p PeerAddress) {
 			defer wg.Done()
 			atomic.AddInt32(&active, 1)
-			defer atomic.AddInt32(&active, -1)
+			d.reportProgress(t, manager, start, &active)
+			defer func() {
+				atomic.AddInt32(&active, -1)
+				d.reportProgress(t, manager, start, &active)
+			}()
 			if err := d.peerWorker(ctx, t, p, writer, manager, start, &active); err != nil {
 				errCh <- err
 			}
@@ -122,15 +126,20 @@ func (d *Downloader) peerWorker(ctx context.Context, t *torrent.Torrent, p PeerA
 		}
 		manager.MarkComplete(index)
 
-		if d.OnProgress != nil {
-			d.OnProgress(torrent.Progress{
-				CompletedPieces: manager.CompletedCount(),
-				TotalPieces:     t.Info.PieceCount(),
-				DownloadedBytes: int64(manager.CompletedCount()) * t.Info.PieceLength,
-				TotalBytes:      t.Info.Length,
-				ActivePeers:     int(atomic.LoadInt32(active)),
-				Elapsed:         time.Since(start),
-			})
-		}
+		d.reportProgress(t, manager, start, active)
 	}
+}
+
+func (d *Downloader) reportProgress(t *torrent.Torrent, manager *pieces.Manager, start time.Time, active *int32) {
+	if d.OnProgress == nil {
+		return
+	}
+	d.OnProgress(torrent.Progress{
+		CompletedPieces: manager.CompletedCount(),
+		TotalPieces:     t.Info.PieceCount(),
+		DownloadedBytes: int64(manager.CompletedCount()) * t.Info.PieceLength,
+		TotalBytes:      t.Info.Length,
+		ActivePeers:     int(atomic.LoadInt32(active)),
+		Elapsed:         time.Since(start),
+	})
 }
