@@ -2,6 +2,7 @@ package peer
 
 import (
 	"fmt"
+	"io"
 )
 
 const (
@@ -43,4 +44,25 @@ func Deserialize(data []byte) (Handshake, error) {
 	copy(h.InfoHash[:], data[28:48])
 	copy(h.PeerID[:], data[48:68])
 	return h, nil
+}
+
+// ExchangeHandshake sends our handshake and reads the peer's, verifying info_hash.
+func ExchangeHandshake(rw io.ReadWriter, expected [20]byte, ours Handshake) (Handshake, error) {
+	if _, err := rw.Write(ours.Serialize()); err != nil {
+		return Handshake{}, fmt.Errorf("handshake write: %w", err)
+	}
+
+	buf := make([]byte, handshakeLength)
+	if _, err := io.ReadFull(rw, buf); err != nil {
+		return Handshake{}, fmt.Errorf("handshake read: %w", err)
+	}
+
+	peer, err := Deserialize(buf)
+	if err != nil {
+		return Handshake{}, err
+	}
+	if peer.InfoHash != expected {
+		return Handshake{}, fmt.Errorf("handshake: info_hash mismatch")
+	}
+	return peer, nil
 }
