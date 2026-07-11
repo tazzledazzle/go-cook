@@ -54,7 +54,8 @@ You can point the CLI at a single-file `.torrent`, watch it download with progre
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Learn-by-building, reference when stuck | Deep understanding over copy-paste | — Pending |
-| Vertical slice MVP + TDD | Each phase proves progress; tests document behavior | — Pending |
+| TDD-first vertical slice + TDD | Each phase proves progress; tests document behavior | — Pending |
+| Strict TDD from Phase 2 onward | Phase 1 shipped without full RED-first discipline; Phase 2+ uses RED-GREEN-REFACTOR with failing-test-first commits | — Pending |
 | Single-file torrents in v1 | Simplest path to "it downloads" | — Pending |
 | Download-only (no seeding) | Cuts upload state machine complexity for v1 | — Pending |
 | Synthetic fixtures + live manual test | Fast CI + confidence on real torrents | — Pending |
