@@ -2,6 +2,7 @@ package downloader
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"sync"
@@ -81,8 +82,12 @@ func (d *Downloader) Download(ctx context.Context, t *torrent.Torrent, dir strin
 
 	select {
 	case err := <-errCh:
+		<-done
+		_ = writer.Close()
 		return err
 	case <-ctx.Done():
+		<-done
+		_ = writer.Close()
 		return ctx.Err()
 	case <-done:
 		if !manager.Complete() {
@@ -96,9 +101,17 @@ func (d *Downloader) peerWorker(ctx context.Context, t *torrent.Torrent, p PeerA
 	addr := fmt.Sprintf("%s:%d", p.IP, p.Port)
 	conn, err := d.DialContext(ctx, "tcp", addr)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return err
+		}
 		return fmt.Errorf("download: dial %s: %w", addr, err)
 	}
 	defer conn.Close()
+
+	go func() {
+		<-ctx.Done()
+		_ = conn.Close()
+	}()
 
 	ours := peer.Handshake{InfoHash: t.InfoHash, PeerID: d.PeerID}
 	pc := peer.NewConnection(conn, t.InfoHash, ours)
