@@ -23,19 +23,19 @@
 - [x] **PEER-01**: Client sends and receives 68-byte BitTorrent handshake (pstr, reserved, info_hash, peer_id)
 - [x] **PEER-02**: Client verifies peer's info_hash matches local hash; rejects mismatch
 - [x] **PEER-03**: Client reads length-prefixed messages (keepalive, choke, unchoke, interested, bitfield, have, request, piece)
-- [ ] **PEER-04**: Client sends Interested and waits for Unchoke before requesting blocks
+- [x] **PEER-04**: Client sends Interested and waits for Unchoke before requesting blocks
 
 ### Pieces & Verification
 
-- [ ] **PIEC-01**: Piece manager tracks piece states (pending, downloading, complete, failed)
-- [ ] **PIEC-02**: Incoming Piece messages store 16 KB blocks at correct begin offset within piece buffer
-- [ ] **PIEC-03**: Complete piece validated against SHA1 hash from `.torrent` metadata
-- [ ] **PIEC-04**: Failed hash resets piece for re-download
+- [x] **PIEC-01**: Piece manager tracks piece states (pending, downloading, complete, failed)
+- [x] **PIEC-02**: Incoming Piece messages store 16 KB blocks at correct begin offset within piece buffer
+- [x] **PIEC-03**: Complete piece validated against SHA1 hash from `.torrent` metadata
+- [x] **PIEC-04**: Failed hash resets piece for re-download
 
 ### File I/O
 
-- [ ] **FILE-01**: Writer creates output file named from torrent info.name
-- [ ] **FILE-02**: Verified piece written at correct byte offset (pieceIndex × pieceLength)
+- [x] **FILE-01**: Writer creates output file named from torrent info.name
+- [x] **FILE-02**: Verified piece written at correct byte offset (pieceIndex × pieceLength)
 
 ### CLI & Orchestration
 
@@ -89,13 +89,13 @@
 | PEER-01 | Phase 3 | Complete |
 | PEER-02 | Phase 3 | Complete |
 | PEER-03 | Phase 3 | Complete |
-| PEER-04 | Phase 4 | Pending |
-| PIEC-01 | Phase 4 | Pending |
-| PIEC-02 | Phase 4 | Pending |
-| PIEC-03 | Phase 4 | Pending |
-| PIEC-04 | Phase 4 | Pending |
-| FILE-01 | Phase 4 | Pending |
-| FILE-02 | Phase 4 | Pending |
+| PEER-04 | Phase 4 | Complete |
+| PIEC-01 | Phase 4 | Complete |
+| PIEC-02 | Phase 4 | Complete |
+| PIEC-03 | Phase 4 | Complete |
+| PIEC-04 | Phase 4 | Complete |
+| FILE-01 | Phase 4 | Complete |
+| FILE-02 | Phase 4 | Complete |
 | CLI-01 | Phase 5 | Pending |
 | CLI-02 | Phase 5 | Pending |
 | CLI-03 | Phase 6 | Pending |
