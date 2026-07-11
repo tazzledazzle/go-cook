@@ -24,7 +24,7 @@ func TestParseCompactPeers(t *testing.T) {
 			name: "two peers",
 			input: []byte{
 				127, 0, 0, 1, 0x1a, 0xe1,
-				192, 168, 0, 1, 0xc9, 0x35,
+				192, 168, 0, 1, 0xc8, 0xd5,
 			},
 			want: []Peer{
 				{IP: net.IP{127, 0, 0, 1}, Port: 6881},
