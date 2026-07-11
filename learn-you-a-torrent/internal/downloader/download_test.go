@@ -2,6 +2,7 @@ package downloader
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"runtime"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/tazzledazzle/go-cook/learn-you-a-torrent/internal/peer"
 	"github.com/tazzledazzle/go-cook/learn-you-a-torrent/internal/torrent"
@@ -145,6 +147,84 @@ func TestDownloader_downloadsMinimalTorrent(t *testing.T) {
 	}
 	if string(got) != "hello world\n" {
 		t.Errorf("file content = %q, want %q", got, "hello world\n")
+	}
+}
+
+func startBlockingMockPeer(t *testing.T, tor *torrent.Torrent) (port uint16, cleanup func()) {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() error = %v", err)
+	}
+	addr := ln.Addr().(*net.TCPAddr)
+	peerHS := peer.Handshake{InfoHash: tor.InfoHash, PeerID: testPeerID()}
+
+	go func() {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			go handleBlockingMockPeer(conn, peerHS)
+		}
+	}()
+
+	return uint16(addr.Port), func() { _ = ln.Close() }
+}
+
+func handleBlockingMockPeer(conn net.Conn, peerHS peer.Handshake) {
+	defer conn.Close()
+	buf := make([]byte, 68)
+	if _, err := io.ReadFull(conn, buf); err != nil {
+		return
+	}
+	_, _ = conn.Write(peerHS.Serialize())
+	_ = peer.WriteMessage(conn, peer.Message{ID: peer.MsgBitfield, Payload: []byte{0xff}})
+	_ = peer.WriteMessage(conn, peer.Message{ID: peer.MsgUnchoke})
+
+	for {
+		if _, err := peer.ReadMessage(conn); err != nil {
+			return
+		}
+	}
+}
+
+func TestDownloader_cancelledContext(t *testing.T) {
+	tor, err := torrent.ParseTorrent(minimalTorrentPath(t))
+	if err != nil {
+		t.Fatalf("ParseTorrent() error = %v", err)
+	}
+
+	port, cleanupPeer := startBlockingMockPeer(t, tor)
+	defer cleanupPeer()
+
+	dir := t.TempDir()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		cancel()
+	}()
+
+	d := &Downloader{
+		PeerID: testPeerID(),
+		ListPeers: func(t *torrent.Torrent) ([]PeerAddress, error) {
+			return []PeerAddress{{IP: net.IP{127, 0, 0, 1}, Port: port}}, nil
+		},
+	}
+
+	err = d.Download(ctx, tor, dir)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("Download() error = %v, want context.Canceled", err)
+	}
+
+	got, err := os.ReadFile(filepath.Join(dir, "test.txt"))
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("file length = %d, want 0 verified bytes on cancel", len(got))
 	}
 }
 
