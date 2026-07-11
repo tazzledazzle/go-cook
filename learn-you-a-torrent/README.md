@@ -58,7 +58,7 @@ Each phase is TDD-first: write failing test → implement → refactor.
 | **5** | Full downloader + progress CLI | Complete single-file download |
 | **6** | Graceful shutdown | Ctrl+C exits cleanly |
 
-Run `/gsd-plan-phase 1` to start Phase 1 planning.
+Phases 1–5 implemented. Phase 6 adds signal handling.
 
 ## File Reference
 
@@ -69,13 +69,33 @@ learn-you-a-torrent/
 ├── cmd/torrent/main.go
 ├── internal/
 │   ├── bencode/decode.go
-│   ├── torrent/parser.go, info_hash.go, download.go
+│   ├── torrent/parser.go, info_hash.go, progress.go
+│   ├── downloader/download.go
 │   ├── tracker/client.go, announce.go
 │   ├── peer/handshake.go, message.go, connection.go
-│   ├── pieces/piece.go, manager.go
+│   ├── pieces/piece.go, manager.go, downloader.go
 │   └── file/writer.go
 └── testdata/minimal.torrent
 ```
+
+## Manual Verification (TEST-03)
+
+### Automated (CI)
+
+```bash
+go test ./...
+go test -race ./...
+```
+
+`TestDownloader_downloadsMinimalTorrent` runs the full path with `testdata/minimal.torrent` (expected file content: `hello world\n`).
+
+### CLI (requires tracker + peers)
+
+```bash
+go run ./cmd/torrent download testdata/minimal.torrent
+```
+
+For a live check, use a legitimate public single-file torrent and verify output size/checksum against publisher values.
 
 ## Getting Started
 
