@@ -7,9 +7,9 @@ last_updated: "2026-07-11T06:00:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 19
+  total_plans: 24
   completed_plans: 15
-  percent: 67
+  percent: 63
 ---
 
 # State: Learn You a BitTorrent Client
@@ -21,7 +21,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-10)
 
 **Core value:** Download a single-file torrent with verified pieces and understand every layer
-**Current focus:** Phase 5 — Full Download & Progress CLI
+**Current focus:** Phase 5 — Full Download & Progress CLI (executing via --chain)
 
 ## Phase Status
 
@@ -31,7 +31,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-10)
 | 2 | Tracker Announce | ✓ Complete | 3/3 |
 | 3 | Peer Handshake & Messages | ✓ Complete | 4/4 |
 | 4 | Download One Piece | ✓ Complete | 5/5 |
-| 5 | Full Download & Progress CLI | ○ Pending | 0/0 |
+| 5 | Full Download & Progress CLI | ○ Executing | 0/5 |
 | 6 | Graceful Shutdown | ○ Pending | 0/0 |
 
 ## Active Work
