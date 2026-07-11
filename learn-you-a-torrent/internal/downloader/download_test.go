@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync/atomic"
 	"testing"
 
 	"github.com/tazzledazzle/go-cook/learn-you-a-torrent/internal/peer"
@@ -158,7 +159,7 @@ func TestDownloader_multiplePeers(t *testing.T) {
 	defer cleanupPeer()
 
 	dir := t.TempDir()
-	var maxPeers int
+	var maxPeers atomic.Int32
 	d := &Downloader{
 		PeerID: testPeerID(),
 		ListPeers: func(t *torrent.Torrent) ([]PeerAddress, error) {
@@ -168,8 +169,14 @@ func TestDownloader_multiplePeers(t *testing.T) {
 			}, nil
 		},
 		OnProgress: func(p torrent.Progress) {
-			if p.ActivePeers > maxPeers {
-				maxPeers = p.ActivePeers
+			for {
+				current := maxPeers.Load()
+				if int32(p.ActivePeers) <= current {
+					return
+				}
+				if maxPeers.CompareAndSwap(current, int32(p.ActivePeers)) {
+					return
+				}
 			}
 		},
 	}
@@ -177,8 +184,8 @@ func TestDownloader_multiplePeers(t *testing.T) {
 	if err := d.Download(context.Background(), tor, dir); err != nil {
 		t.Fatalf("Download() error = %v", err)
 	}
-	if maxPeers < 2 {
-		t.Fatalf("max active peers = %d, want >= 2", maxPeers)
+	if maxPeers.Load() < 2 {
+		t.Fatalf("max active peers = %d, want >= 2", maxPeers.Load())
 	}
 
 	got, err := os.ReadFile(filepath.Join(dir, "test.txt"))
