@@ -79,10 +79,10 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BENC-01 | Phase 1 | Pending |
-| BENC-02 | Phase 1 | Pending |
-| TORR-01 | Phase 1 | Pending |
-| TORR-02 | Phase 1 | Pending |
+| BENC-01 | Phase 1 | Complete |
+| BENC-02 | Phase 1 | Complete |
+| TORR-01 | Phase 1 | Complete |
+| TORR-02 | Phase 1 | Complete |
 | TRCK-01 | Phase 2 | Pending |
 | TRCK-02 | Phase 2 | Pending |
 | TRCK-03 | Phase 2 | Pending |
@@ -100,7 +100,7 @@
 | CLI-02 | Phase 5 | Pending |
 | CLI-03 | Phase 6 | Pending |
 | TEST-01 | All phases | Pending |
-| TEST-02 | Phase 1 | Pending |
+| TEST-02 | Phase 1 | Complete |
 | TEST-03 | Phase 5 | Pending |
 
 **Coverage:**
