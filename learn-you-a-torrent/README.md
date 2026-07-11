@@ -36,27 +36,27 @@ peer TCP connect → 68-byte handshake → bitfield / have / unchoke
 
 ## Module Architecture
 
-| Module | Responsibility | Key types |
-|--------|----------------|-----------|
-| `bencode/` | Torrent serialization format | `Decoder`, decode string/int/list/dict |
+| Module     | Responsibility                    | Key types                                   |
+|------------|-----------------------------------|---------------------------------------------|
+| `bencode/` | Torrent serialization format      | `Decoder`, decode string/int/list/dict      |
 | `torrent/` | `.torrent` parsing & coordination | `Torrent`, `Info`, `InfoHash`, `Downloader` |
-| `tracker/` | Peer discovery via HTTP | `TrackerClient`, compact peer parsing |
-| `peer/` | BitTorrent wire protocol (BEP 3) | `Handshake`, `Message`, `Connection` |
-| `pieces/` | Piece/block state & verification | `Piece`, `Manager`, `Block` |
-| `file/` | Disk writes | `Writer`, piece → byte offset |
+| `tracker/` | Peer discovery via HTTP           | `TrackerClient`, compact peer parsing       |
+| `peer/`    | BitTorrent wire protocol (BEP 3)  | `Handshake`, `Message`, `Connection`        |
+| `pieces/`  | Piece/block state & verification  | `Piece`, `Manager`, `Block`                 |
+| `file/`    | Disk writes                       | `Writer`, piece → byte offset               |
 
 ## Build Phases (Vertical Slice MVP)
 
 Each phase is TDD-first: write failing test → implement → refactor.
 
-| Phase | You build | You can demo |
-|-------|-----------|--------------|
+| Phase | You build                                    | You can demo                        |
+|-------|----------------------------------------------|-------------------------------------|
 | **1** | Bencode decoder + torrent parser + info hash | `go test` prints parsed name & hash |
-| **2** | HTTP tracker client | Print peer list from announce |
-| **3** | Handshake + message loop | Connect to peer, read bitfield |
-| **4** | Piece download + verify + write | One verified piece on disk |
-| **5** | Full downloader + progress CLI | Complete single-file download |
-| **6** | Graceful shutdown | Ctrl+C exits cleanly |
+| **2** | HTTP tracker client                          | Print peer list from announce       |
+| **3** | Handshake + message loop                     | Connect to peer, read bitfield      |
+| **4** | Piece download + verify + write              | One verified piece on disk          |
+| **5** | Full downloader + progress CLI               | Complete single-file download       |
+| **6** | Graceful shutdown                            | Ctrl+C exits cleanly                |
 
 Phases 1–5 implemented. Phase 6 adds signal handling.
 
@@ -78,24 +78,35 @@ learn-you-a-torrent/
 └── testdata/minimal.torrent
 ```
 
-## Manual Verification (TEST-03)
+## Run
 
-### Automated (CI)
+**Prerequisites:** Go 1.22+
 
+```bash
+# Quick run (no build step)
+go run ./cmd/torrent download path/to/file.torrent
+
+# Build the binary first
+go build -o torrent ./cmd/torrent
+./torrent download path/to/file.torrent
+```
+
+The client will:
+1. Parse the `.torrent` file
+2. Announce to the tracker and retrieve peers
+3. Connect to peers via TCP, exchange handshakes, and request pieces
+4. Verify each piece with SHA1
+5. Write the completed file to the current directory
+
+Progress is printed inline. Press `Ctrl+C` to shut down gracefully — the shutdown progress line shows how far the download got.
+
+**Smoke test with the synthetic fixture** (no tracker or peers required):
 ```bash
 go test ./...
 go test -race ./...
 ```
 
-`TestDownloader_downloadsMinimalTorrent` runs the full path with `testdata/minimal.torrent` (expected file content: `hello world\n`).
-
-### CLI (requires tracker + peers)
-
-```bash
-go run ./cmd/torrent download testdata/minimal.torrent
-```
-
-For a live check, use a legitimate public single-file torrent and verify output size/checksum against publisher values.
+`TestDownloader_downloadsMinimalTorrent` exercises the full path using `testdata/minimal.torrent` (expected output: `hello world\n`).
 
 ## Getting Started
 
