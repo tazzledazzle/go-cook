@@ -41,7 +41,7 @@
 
 - [x] **CLI-01**: `torrent download <file.torrent>` starts download to current directory
 - [x] **CLI-02**: Progress output shows percent complete, download speed, and connected peer count
-- [ ] **CLI-03**: Ctrl+C triggers graceful shutdown (stop peers, flush file, exit cleanly)
+- [x] **CLI-03**: Ctrl+C triggers graceful shutdown (stop peers, flush file, exit cleanly)
 
 ### Testing
 
@@ -98,7 +98,7 @@
 | FILE-02 | Phase 4 | Complete |
 | CLI-01 | Phase 5 | Complete |
 | CLI-02 | Phase 5 | Complete |
-| CLI-03 | Phase 6 | Pending |
+| CLI-03 | Phase 6 | Complete |
 | TEST-01 | All phases | Pending |
 | TEST-02 | Phase 1 | Complete |
 | TEST-03 | Phase 5 | Complete |
