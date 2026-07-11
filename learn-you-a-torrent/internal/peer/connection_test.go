@@ -52,3 +52,54 @@ func TestConnection_readsBitfieldAndUnchoke(t *testing.T) {
 		t.Fatalf("second message ID = %d, want %d", unchoke.ID, MsgUnchoke)
 	}
 }
+
+func TestConnection_sendInterested(t *testing.T) {
+	client, server := net.Pipe()
+	t.Cleanup(func() {
+		_ = client.Close()
+		_ = server.Close()
+	})
+
+	go func() {
+		msg, err := ReadMessage(server)
+		if err != nil {
+			return
+		}
+		if msg.ID != MsgInterested {
+			t.Errorf("message ID = %d, want %d", msg.ID, MsgInterested)
+		}
+	}()
+
+	conn := NewConnection(client, minimalInfoHash(), Handshake{InfoHash: minimalInfoHash(), PeerID: testPeerID()})
+	if err := conn.SendInterested(); err != nil {
+		t.Fatalf("SendInterested() error = %v", err)
+	}
+}
+
+func TestConnection_sendRequest(t *testing.T) {
+	client, server := net.Pipe()
+	t.Cleanup(func() {
+		_ = client.Close()
+		_ = server.Close()
+	})
+
+	go func() {
+		msg, err := ReadMessage(server)
+		if err != nil {
+			return
+		}
+		index, begin, length, err := ParseRequest(msg)
+		if err != nil {
+			t.Errorf("ParseRequest() error = %v", err)
+			return
+		}
+		if index != 0 || begin != 0 || length != 12 {
+			t.Errorf("request = (%d, %d, %d), want (0, 0, 12)", index, begin, length)
+		}
+	}()
+
+	conn := NewConnection(client, minimalInfoHash(), Handshake{InfoHash: minimalInfoHash(), PeerID: testPeerID()})
+	if err := conn.SendRequest(0, 0, 12); err != nil {
+		t.Fatalf("SendRequest() error = %v", err)
+	}
+}
