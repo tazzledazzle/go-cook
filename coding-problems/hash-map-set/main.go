@@ -3,6 +3,8 @@ package main
 import (
 	"reflect"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 // difference between two arrays
@@ -67,4 +69,30 @@ func closeStrings(word1 string, word2 string) bool {
 	sort.Ints(ch1)
 	sort.Ints(ch2)
 	return reflect.DeepEqual(ch1, ch2)
+}
+
+// equal row and column pairs
+func equalPairs(grid [][]int) int {
+	n := len(grid)
+	rowCount := map[string]int{}
+	for _, row := range grid {
+		rowCount[encode(row)]++
+	}
+	total := 0
+	for c := 0; c < n; c++ {
+		col := make([]int, n)
+		for r := 0; r < n; r++ {
+			col[r] = grid[r][c]
+		}
+		total += rowCount[encode(col)]
+	}
+	return total
+}
+
+func encode(row []int) string {
+	parts := make([]string, len(row))
+	for i, val := range row {
+		parts[i] = strconv.Itoa(val)
+	}
+	return strings.Join(parts, ",")
 }
