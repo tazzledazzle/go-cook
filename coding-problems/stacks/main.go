@@ -12,3 +12,30 @@ func removeStars(s string) string {
 	}
 	return string(stack)
 }
+
+// asteroid collision
+
+func asteroidCollision(asteroids []int) []int {
+	stack := make([]int, 0, len(asteroids))
+	for _, asteroid := range asteroids {
+		alive := true
+		for alive &&
+			asteroid < 0 &&
+			len(stack) > 0 &&
+			stack[len(stack)-1] > 0 {
+			top := stack[len(stack)-1]
+			if top < -asteroid {
+				stack = stack[:len(stack)-1]
+			} else if top == -asteroid {
+				stack = stack[:len(stack)-1]
+				alive = false
+			} else {
+				alive = false
+			}
+		}
+		if alive {
+			stack = append(stack, asteroid)
+		}
+	}
+	return stack
+}
