@@ -44,3 +44,23 @@ func maxVowels(s string, k int) int {
 
 	return best
 }
+
+// max consecutive ones iii
+func longestOnes(nums []int, k int) int {
+	left, zeros, best := 0, 0, 0
+	for right := 0; right < len(nums); right++ {
+		if nums[right] == 0 {
+			zeros++
+		}
+		for zeros > k {
+			if nums[left] == 0 {
+				zeros--
+			}
+			left++
+		}
+		if right-left+1 > best {
+			best = right - left + 1
+		}
+	}
+	return best
+}
