@@ -38,3 +38,16 @@ func oddEvenList(head *ListNode) *ListNode {
 	odd.Next = evenHead
 	return head
 }
+
+// reverse linked list
+func reverseList(head *ListNode) *ListNode {
+	var previous *ListNode
+	current := head
+	for current != nil {
+		next := current.Next
+		current.Next = previous
+		previous = current
+		current = next
+	}
+	return previous
+}
