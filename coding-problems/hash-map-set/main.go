@@ -23,3 +23,19 @@ func findDifference(nums1 []int, nums2 []int) [][]int {
 	}
 	return result
 }
+
+// unique number of occurrences
+func uniqueOccurrences(arr []int) bool {
+	freq := map[int]int{}
+	for _, num := range arr {
+		freq[num]++
+	}
+	seen := map[int]bool{}
+	for _, num := range freq {
+		if seen[num] {
+			return false
+		}
+		seen[num] = true
+	}
+	return true
+}
