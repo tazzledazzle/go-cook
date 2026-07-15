@@ -64,3 +64,23 @@ func longestOnes(nums []int, k int) int {
 	}
 	return best
 }
+
+// longest subarray of 1's after deleting one element
+func longestSubarray(nums []int) int {
+	left, zeros, best := 0, 0, 0
+	for right := 0; right < len(nums); right++ {
+		if nums[right] == 0 {
+			zeros++
+		}
+		for zeros > 1 {
+			if nums[left] == 0 {
+				zeros--
+			}
+			left++
+		}
+		if right-left > best {
+			best = right - left
+		}
+	}
+	return best
+}
