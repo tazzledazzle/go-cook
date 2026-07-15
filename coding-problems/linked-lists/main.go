@@ -51,3 +51,30 @@ func reverseList(head *ListNode) *ListNode {
 	}
 	return previous
 }
+
+// maximum twin sum of a linked list
+func pairSum(head *ListNode) int {
+	slowPtr, fastPtr := head, head
+	for fastPtr != nil && fastPtr.Next != nil {
+		slowPtr = slowPtr.Next
+		fastPtr = fastPtr.Next.Next
+	}
+	var previous *ListNode
+	current := slowPtr
+	for current != nil {
+		next := current.Next
+		current.Next = previous
+		previous = current
+		current = next
+	}
+	best := 0
+	firstPtr, secondPtr := head, previous
+	for secondPtr != nil {
+		if firstPtr.Val+secondPtr.Val > best {
+			best = firstPtr.Val + secondPtr.Val
+		}
+		firstPtr = firstPtr.Next
+		secondPtr = secondPtr.Next
+	}
+	return best
+}
