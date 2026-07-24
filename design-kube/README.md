@@ -61,5 +61,63 @@ Declarative desired state across many nodes with self-healing and an API-first, 
 | Network block (EBS/PD-style) for default PVs | Easy, managed; CSI for Ceph/Rook when on-prem               | — Pending |
 | Binpack/spread/priority scheduler strategies | Configurable by use case (cost vs HA vs fairness)           | — Pending |
 
+## kquick
+
+`kquick` is a read-only CLI for common Kubernetes Pod inspection workflows.
+Version one supports listing, describing, and streaming logs from Pods only —
+other resources and all mutating operations are out of scope.
+
+### Install
+
+From the `design-kube` module:
+
+```bash
+go install ./cmd/kquick
+```
+
+### Usage
+
+```bash
+kquick get pods
+kquick get pods -n kube-system -o yaml
+kquick describe pod api-0 -n demo
+kquick logs pod api-0 -n demo -c api --tail 100
+kquick logs pod api-0 -n demo -f
+```
+
+Both `pod` and `pods` are accepted as resource aliases.
+
+### Configuration
+
+Kubeconfig credentials follow standard precedence:
+
+1. `--kubeconfig`
+2. `KUBECONFIG`
+3. `~/.kube/config`
+
+Global flags:
+
+- `--context` overrides the active kubeconfig context
+- `--namespace` / `-n` overrides the namespace (falls back to kubeconfig, then `default`)
+
+### Output formats
+
+`kquick get pods` defaults to a human-readable table (`NAME`, `READY`, `STATUS`,
+`RESTARTS`, `AGE`, `NODE`). Use `-o` / `--output` for scripting:
+
+- `table` (default)
+- `json`
+- `yaml`
+
+Structured formats emit Kubernetes Pod list objects.
+
+### Logs
+
+`kquick logs pod NAME` writes to stdout and supports:
+
+- `-c` / `--container` (required when the Pod has more than one container)
+- `-f` / `--follow`
+- `--tail` (number of lines from the end; `-1` shows all)
+
 ---
-*Last updated: 2025-02-16 after initialization*
+*Last updated: 2026-07-23 after kquick CLI*
