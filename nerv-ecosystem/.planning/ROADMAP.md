@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **UI hint**: no
 
 Plans:
-- [ ] 01-01-PLAN.md — Walking skeleton: Go module + Cobra CLI + WAL/FTS5 store, `modular status` proving it end-to-end (wave 1)
+- [x] 01-01-PLAN.md — Walking skeleton: Go module + Cobra CLI + WAL/FTS5 store, `modular status` proving it end-to-end (wave 1)
 - [ ] 01-02-PLAN.md — Reopen safety, live FTS5 trigger sync, permission/exit-code hardening, `-race` + lint enforcement harness (wave 2)
 
 ### Phase 2: Generate
@@ -113,7 +113,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Platform Foundation | 0/2 | Planned    |  |
+| 1. Platform Foundation | 1/2 | In Progress|  |
 | 2. Generate | 0/3 | Not started | - |
 | 3. Publish | 0/3 | Not started | - |
 | 4. Dependency Graph | 0/2 | Not started | - |

@@ -9,9 +9,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Platform Foundation
 
-- [ ] **PLAT-01**: Operator can install/run a single Go binary CLI (`modular` or project-chosen name) with no required cloud accounts or always-on daemons for the core path
-- [ ] **PLAT-02**: Platform persists projects, versions, dependency edges, and search index in one embedded SQLite store (WAL + FTS5)
-- [ ] **PLAT-03**: Every vertical slice is implemented test-first (failing test before production code); race detector and table-driven tests cover domain packages
+- [x] **PLAT-01**: Operator can install/run a single Go binary CLI (`modular` or project-chosen name) with no required cloud accounts or always-on daemons for the core path
+- [x] **PLAT-02**: Platform persists projects, versions, dependency edges, and search index in one embedded SQLite store (WAL + FTS5)
+- [x] **PLAT-03**: Every vertical slice is implemented test-first (failing test before production code); race detector and table-driven tests cover domain packages
 
 ### Generate
 
@@ -92,9 +92,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PLAT-01 | Phase 1 | Pending |
-| PLAT-02 | Phase 1 | Pending |
-| PLAT-03 | Phase 1 | Pending |
+| PLAT-01 | Phase 1 | Complete |
+| PLAT-02 | Phase 1 | Complete |
+| PLAT-03 | Phase 1 | Complete |
 | GEN-01 | Phase 2 | Pending |
 | GEN-02 | Phase 2 | Pending |
 | GEN-03 | Phase 2 | Pending |
