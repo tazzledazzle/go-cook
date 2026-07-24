@@ -97,6 +97,7 @@ Kubeconfig credentials follow standard precedence:
 
 Global flags:
 
+- `--kubeconfig` path to the kubeconfig file
 - `--context` overrides the active kubeconfig context
 - `--namespace` / `-n` overrides the namespace (falls back to kubeconfig, then `default`)
 
@@ -117,7 +118,7 @@ Structured formats emit Kubernetes Pod list objects.
 
 - `-c` / `--container` (required when the Pod has more than one container)
 - `-f` / `--follow`
-- `--tail` (number of lines from the end; `-1` shows all)
+- `--tail` (number of lines from the end; default `-1` shows all)
 
 ---
 *Last updated: 2026-07-23 after kquick CLI*

@@ -92,10 +92,8 @@ func (f *flowFactory) New(_ context.Context, opts KubeOptions) (Runtime, string,
 	return f.rt, ns, nil
 }
 
-func TestCommandFlows(t *testing.T) {
-	t.Parallel()
-
-	now := time.Date(2026, 7, 23, 12, 0, 0, 0, time.UTC)
+// newFlowFixture returns an isolated runtime/factory pair for one subtest.
+func newFlowFixture(now time.Time) (*flowRuntime, *flowFactory) {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              "api-0",
@@ -138,32 +136,51 @@ func TestCommandFlows(t *testing.T) {
 		},
 		logs: "ready to serve\n",
 	}
-	factory := &flowFactory{rt: rt}
+	return rt, &flowFactory{rt: rt}
+}
+
+func TestCommandFlows(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 7, 23, 12, 0, 0, 0, time.UTC)
 
 	flows := []struct {
-		name    string
-		args    []string
-		assert  func(t *testing.T, out, errOut string, rt *flowRuntime, factory *flowFactory)
-		prepare func(rt *flowRuntime, factory *flowFactory)
+		name   string
+		args   []string
+		assert func(t *testing.T, out, errOut string, rt *flowRuntime, factory *flowFactory)
 	}{
 		{
 			name: "get pods -n demo",
 			args: []string{"get", "pods", "-n", "demo"},
-			prepare: func(rt *flowRuntime, factory *flowFactory) {
-				rt.listCalls = 0
-				rt.listNS = ""
-				factory.calls = nil
-			},
 			assert: func(t *testing.T, out, errOut string, rt *flowRuntime, factory *flowFactory) {
 				t.Helper()
 				if errOut != "" {
 					t.Fatalf("stderr = %q, want empty", errOut)
 				}
-				if !strings.Contains(out, "NAME") || !strings.Contains(out, "api-0") {
-					t.Fatalf("stdout missing useful pod table: %q", out)
+				// Pinned App.Now + fixture CreationTimestamp (-2h) → AGE 2h;
+				// ReadyCount 1/1, RestartCount 1, NodeName worker-1.
+				for _, want := range []string{
+					"NAME", "READY", "STATUS", "RESTARTS", "AGE", "NODE",
+					"api-0", "1/1", "Running", "2h", "worker-1",
+				} {
+					if !strings.Contains(out, want) {
+						t.Fatalf("stdout missing %q: %q", want, out)
+					}
 				}
-				if !strings.Contains(out, "Running") {
-					t.Fatalf("stdout missing pod status: %q", out)
+				// RESTARTS column value "1" — match the data row fields in order.
+				lines := strings.Split(strings.TrimSpace(out), "\n")
+				if len(lines) < 2 {
+					t.Fatalf("stdout want header + data row, got %q", out)
+				}
+				fields := strings.Fields(lines[1])
+				if len(fields) != 6 {
+					t.Fatalf("data row fields = %v, want 6 columns", fields)
+				}
+				wantFields := []string{"api-0", "1/1", "Running", "1", "2h", "worker-1"}
+				for i, want := range wantFields {
+					if fields[i] != want {
+						t.Fatalf("data row[%d] = %q, want %q (row=%v)", i, fields[i], want, fields)
+					}
 				}
 				if rt.listCalls != 1 {
 					t.Fatalf("ListPods calls = %d, want 1", rt.listCalls)
@@ -179,15 +196,6 @@ func TestCommandFlows(t *testing.T) {
 		{
 			name: "describe pod api-0 -n demo",
 			args: []string{"describe", "pod", "api-0", "-n", "demo"},
-			prepare: func(rt *flowRuntime, factory *flowFactory) {
-				rt.getCalls = 0
-				rt.getNS = ""
-				rt.getName = ""
-				rt.eventsCalls = 0
-				rt.eventsNS = ""
-				rt.eventsName = ""
-				factory.calls = nil
-			},
 			assert: func(t *testing.T, out, errOut string, rt *flowRuntime, factory *flowFactory) {
 				t.Helper()
 				if errOut != "" {
@@ -212,16 +220,6 @@ func TestCommandFlows(t *testing.T) {
 		{
 			name: "logs pod api-0 -n demo --tail 20",
 			args: []string{"logs", "pod", "api-0", "-n", "demo", "--tail", "20"},
-			prepare: func(rt *flowRuntime, factory *flowFactory) {
-				rt.getCalls = 0
-				rt.getNS = ""
-				rt.getName = ""
-				rt.streamCalls = 0
-				rt.streamNS = ""
-				rt.streamName = ""
-				rt.streamOpts = nil
-				factory.calls = nil
-			},
 			assert: func(t *testing.T, out, errOut string, rt *flowRuntime, factory *flowFactory) {
 				t.Helper()
 				if errOut != "" {
@@ -253,14 +251,12 @@ func TestCommandFlows(t *testing.T) {
 	for _, flow := range flows {
 		flow := flow
 		t.Run(flow.name, func(t *testing.T) {
-			// Sequential flows share one runtime; reset per case.
-			if flow.prepare != nil {
-				flow.prepare(rt, factory)
-			}
+			t.Parallel()
+
+			rt, factory := newFlowFixture(now)
 
 			out := &bytes.Buffer{}
 			errOut := &bytes.Buffer{}
-			// Use newRootCommand so we can pin Now for deterministic get ages.
 			cmd := newRootCommand(&App{
 				Factory: factory,
 				Out:     out,
