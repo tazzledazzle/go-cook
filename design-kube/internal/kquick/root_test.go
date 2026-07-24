@@ -14,7 +14,7 @@ import (
 type stubRuntime struct{}
 
 func (stubRuntime) ListPods(context.Context, string) (*corev1.PodList, error) {
-	return nil, errors.New("not implemented")
+	return &corev1.PodList{}, nil
 }
 
 func (stubRuntime) GetPod(context.Context, string, string) (*corev1.Pod, error) {
