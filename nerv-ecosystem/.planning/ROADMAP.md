@@ -29,12 +29,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. Operator can install and run a single `modular` (or project-chosen name) binary with zero required cloud accounts or always-on daemons
   2. Running any command opens/initializes one embedded SQLite store file (WAL mode) with the FTS5 search table already created
   3. Domain packages have table-driven tests that pass under `go test -race`, proving the TDD scaffolding (failing test before production code) is in place before feature work begins
-**Plans**: TBD (test-first / TDD mandatory per PLAT-03)
+**Plans**: 2 plans (test-first / TDD mandatory per PLAT-03)
 **UI hint**: no
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md — Walking skeleton: Go module + Cobra CLI + WAL/FTS5 store, `modular status` proving it end-to-end (wave 1)
+- [ ] 01-02-PLAN.md — Reopen safety, live FTS5 trigger sync, permission/exit-code hardening, `-race` + lint enforcement harness (wave 2)
 
 ### Phase 2: Generate
 **Goal**: Engineer can scaffold a compliant, provenance-tracked Go/Java/Python service from local filesystem templates with one command
