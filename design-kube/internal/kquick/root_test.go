@@ -266,7 +266,7 @@ func TestKubeOptionsReachFactory(t *testing.T) {
 		},
 		{
 			name: "short namespace flag",
-			args: []string{"-n", "apps", "describe", "pod"},
+			args: []string{"-n", "apps", "logs", "pod"},
 			want: KubeOptions{Namespace: "apps"},
 		},
 	}

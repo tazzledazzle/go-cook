@@ -41,7 +41,7 @@ func newRootCommand(app *App) *cobra.Command {
 	root.PersistentFlags().StringVarP(&app.Opts.Namespace, "namespace", "n", "", "namespace to use")
 
 	root.AddCommand(newGetCommand(app))
-	root.AddCommand(newPlaceholderCommand(app, "describe", "RESOURCE NAME"))
+	root.AddCommand(newDescribeCommand(app))
 	root.AddCommand(newPlaceholderCommand(app, "logs", "RESOURCE NAME"))
 
 	return root
