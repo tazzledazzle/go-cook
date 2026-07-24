@@ -7,6 +7,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -76,11 +77,30 @@ type clientGoRuntime struct {
 }
 
 func (r *clientGoRuntime) ListPods(ctx context.Context, namespace string) (*corev1.PodList, error) {
-	list, err := r.client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("list pods in namespace %q: %w", namespace, err)
+	var out *corev1.PodList
+	continueToken := ""
+	for {
+		list, err := r.client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+			Continue: continueToken,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("list pods in namespace %q: %w", namespace, err)
+		}
+		if out == nil {
+			out = list
+		} else {
+			out.Items = append(out.Items, list.Items...)
+			out.ListMeta = list.ListMeta
+		}
+		continueToken = list.Continue
+		if continueToken == "" {
+			break
+		}
 	}
-	return list, nil
+	if out == nil {
+		out = &corev1.PodList{}
+	}
+	return out, nil
 }
 
 func (r *clientGoRuntime) GetPod(ctx context.Context, namespace, name string) (*corev1.Pod, error) {
@@ -92,23 +112,36 @@ func (r *clientGoRuntime) GetPod(ctx context.Context, namespace, name string) (*
 }
 
 func (r *clientGoRuntime) ListPodEvents(ctx context.Context, namespace, podName string) (*corev1.EventList, error) {
-	list, err := r.client.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("list events for pod %q in namespace %q: %w", podName, namespace, err)
-	}
+	selector := fields.AndSelectors(
+		fields.OneTermEqualSelector("involvedObject.name", podName),
+		fields.OneTermEqualSelector("involvedObject.kind", "Pod"),
+	).String()
 
-	filtered := &corev1.EventList{
-		TypeMeta: list.TypeMeta,
-		ListMeta: list.ListMeta,
-		Items:    make([]corev1.Event, 0, len(list.Items)),
-	}
-	for _, event := range list.Items {
-		ref := event.InvolvedObject
-		if ref.Kind == "Pod" && ref.Name == podName && ref.Namespace == namespace {
-			filtered.Items = append(filtered.Items, event)
+	var out *corev1.EventList
+	continueToken := ""
+	for {
+		list, err := r.client.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{
+			FieldSelector: selector,
+			Continue:      continueToken,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("list events for pod %q in namespace %q: %w", podName, namespace, err)
+		}
+		if out == nil {
+			out = list
+		} else {
+			out.Items = append(out.Items, list.Items...)
+			out.ListMeta = list.ListMeta
+		}
+		continueToken = list.Continue
+		if continueToken == "" {
+			break
 		}
 	}
-	return filtered, nil
+	if out == nil {
+		out = &corev1.EventList{}
+	}
+	return out, nil
 }
 
 func (r *clientGoRuntime) StreamPodLogs(ctx context.Context, namespace, name string, opts *corev1.PodLogOptions) (io.ReadCloser, error) {

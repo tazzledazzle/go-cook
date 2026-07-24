@@ -1,13 +1,13 @@
 module github.com/tazzledazzle/go-cook/design-kube
 
-go 1.26.0
+go 1.24.0
 
 require (
 	github.com/spf13/cobra v1.10.2
 	go.etcd.io/etcd/client/v3 v3.6.8
-	k8s.io/api v0.36.3
-	k8s.io/apimachinery v0.36.3
-	k8s.io/client-go v0.36.3
+	k8s.io/api v0.34.0
+	k8s.io/apimachinery v0.34.0
+	k8s.io/client-go v0.34.0
 )
 
 require (

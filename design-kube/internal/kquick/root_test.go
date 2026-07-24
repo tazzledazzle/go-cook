@@ -237,24 +237,37 @@ func TestRoot(t *testing.T) {
 	}
 }
 
-func TestKubeOptions(t *testing.T) {
+func TestKubeOptionsReachFactory(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name string
-		opts KubeOptions
+		args []string
+		want KubeOptions
 	}{
 		{
-			name: "empty options",
-			opts: KubeOptions{},
-		},
-		{
-			name: "all fields set",
-			opts: KubeOptions{
+			name: "all kube flags",
+			args: []string{
+				"--kubeconfig", "/path/to/kubeconfig",
+				"--context", "prod",
+				"--namespace", "apps",
+				"get", "pods",
+			},
+			want: KubeOptions{
 				Kubeconfig: "/path/to/kubeconfig",
 				Context:    "prod",
 				Namespace:  "apps",
 			},
+		},
+		{
+			name: "empty options use defaults",
+			args: []string{"get", "pods"},
+			want: KubeOptions{},
+		},
+		{
+			name: "short namespace flag",
+			args: []string{"-n", "apps", "describe", "pod"},
+			want: KubeOptions{Namespace: "apps"},
 		},
 	}
 
@@ -262,11 +275,19 @@ func TestKubeOptions(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if tt.opts.Kubeconfig != tt.opts.Kubeconfig {
-				t.Fatal("KubeOptions fields must be accessible")
+
+			factory := &recordingFactory{ns: "default"}
+			cmd := NewRootCommand(factory, io.Discard, io.Discard)
+			cmd.SetArgs(tt.args)
+			if err := cmd.ExecuteContext(context.Background()); err != nil {
+				t.Fatalf("ExecuteContext: %v", err)
 			}
-			_ = tt.opts.Context
-			_ = tt.opts.Namespace
+			if len(factory.calls) != 1 {
+				t.Fatalf("factory calls = %d, want 1", len(factory.calls))
+			}
+			if got := factory.calls[0]; got != tt.want {
+				t.Fatalf("KubeOptions = %+v, want %+v", got, tt.want)
+			}
 		})
 	}
 }
