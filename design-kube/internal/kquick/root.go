@@ -1,7 +1,6 @@
 package kquick
 
 import (
-	"fmt"
 	"io"
 	"time"
 
@@ -42,21 +41,7 @@ func newRootCommand(app *App) *cobra.Command {
 
 	root.AddCommand(newGetCommand(app))
 	root.AddCommand(newDescribeCommand(app))
-	root.AddCommand(newPlaceholderCommand(app, "logs", "RESOURCE NAME"))
+	root.AddCommand(newLogsCommand(app))
 
 	return root
-}
-
-func newPlaceholderCommand(app *App, use, argsUse string) *cobra.Command {
-	return &cobra.Command{
-		Use:  use + " " + argsUse,
-		Args: cobra.MinimumNArgs(1),
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			_, _, err := app.Factory.New(cmd.Context(), app.Opts)
-			if err != nil {
-				return fmt.Errorf("%s: %w", use, err)
-			}
-			return nil
-		},
-	}
 }

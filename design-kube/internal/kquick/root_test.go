@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type stubRuntime struct{}
@@ -17,16 +18,21 @@ func (stubRuntime) ListPods(context.Context, string) (*corev1.PodList, error) {
 	return &corev1.PodList{}, nil
 }
 
-func (stubRuntime) GetPod(context.Context, string, string) (*corev1.Pod, error) {
-	return nil, errors.New("not implemented")
+func (stubRuntime) GetPod(_ context.Context, _, name string) (*corev1.Pod, error) {
+	return &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{{Name: "main"}},
+		},
+	}, nil
 }
 
 func (stubRuntime) ListPodEvents(context.Context, string, string) (*corev1.EventList, error) {
-	return nil, errors.New("not implemented")
+	return &corev1.EventList{}, nil
 }
 
 func (stubRuntime) StreamPodLogs(context.Context, string, string, *corev1.PodLogOptions) (io.ReadCloser, error) {
-	return nil, errors.New("not implemented")
+	return io.NopCloser(strings.NewReader("")), nil
 }
 
 type recordingFactory struct {
@@ -266,7 +272,7 @@ func TestKubeOptionsReachFactory(t *testing.T) {
 		},
 		{
 			name: "short namespace flag",
-			args: []string{"-n", "apps", "logs", "pod"},
+			args: []string{"-n", "apps", "logs", "pod", "api-0"},
 			want: KubeOptions{Namespace: "apps"},
 		},
 	}
