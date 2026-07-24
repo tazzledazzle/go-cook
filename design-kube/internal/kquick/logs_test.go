@@ -209,7 +209,7 @@ func TestPodLogs(t *testing.T) {
 			wantFactory:   1,
 			wantContainer: "api",
 			wantFollow:    false,
-			wantTail:      int64Ptr(-1),
+			wantTail:      nil,
 			wantClosed:    true,
 			checkOut: func(t *testing.T, out string) {
 				t.Helper()
@@ -230,7 +230,7 @@ func TestPodLogs(t *testing.T) {
 			wantStream:    1,
 			wantFactory:   1,
 			wantContainer: "api",
-			wantTail:      int64Ptr(-1),
+			wantTail:      nil,
 			wantClosed:    true,
 			checkOut: func(t *testing.T, out string) {
 				t.Helper()
@@ -272,7 +272,7 @@ func TestPodLogs(t *testing.T) {
 			wantStream:    1,
 			wantFactory:   1,
 			wantContainer: "api",
-			wantTail:      int64Ptr(-1),
+			wantTail:      nil,
 			wantClosed:    true,
 		},
 		{
@@ -287,7 +287,7 @@ func TestPodLogs(t *testing.T) {
 			wantStream:    1,
 			wantFactory:   1,
 			wantContainer: "sidecar",
-			wantTail:      int64Ptr(-1),
+			wantTail:      nil,
 			wantClosed:    true,
 		},
 		{
@@ -302,7 +302,7 @@ func TestPodLogs(t *testing.T) {
 			wantStream:    1,
 			wantFactory:   1,
 			wantContainer: "api",
-			wantTail:      int64Ptr(-1),
+			wantTail:      nil,
 			wantClosed:    true,
 		},
 		{
@@ -344,7 +344,7 @@ func TestPodLogs(t *testing.T) {
 			wantFactory:   1,
 			wantContainer: "api",
 			wantFollow:    true,
-			wantTail:      int64Ptr(-1),
+			wantTail:      nil,
 			wantClosed:    true,
 		},
 		{
@@ -360,7 +360,7 @@ func TestPodLogs(t *testing.T) {
 			wantFactory:   1,
 			wantContainer: "api",
 			wantFollow:    true,
-			wantTail:      int64Ptr(-1),
+			wantTail:      nil,
 			wantClosed:    true,
 		},
 		{
@@ -401,7 +401,7 @@ func TestPodLogs(t *testing.T) {
 			wantStream:    1,
 			wantFactory:   1,
 			wantContainer: "api",
-			wantTail:      int64Ptr(-1),
+			wantTail:      nil,
 			wantClosed:    true,
 			checkOut: func(t *testing.T, out string) {
 				t.Helper()
@@ -438,7 +438,7 @@ func TestPodLogs(t *testing.T) {
 			wantStream:    1,
 			wantFactory:   1,
 			wantContainer: "api",
-			wantTail:      int64Ptr(-1),
+			wantTail:      nil,
 		},
 		{
 			name: "copy errors are surfaced",
@@ -456,7 +456,7 @@ func TestPodLogs(t *testing.T) {
 			wantStream:    1,
 			wantFactory:   1,
 			wantContainer: "api",
-			wantTail:      int64Ptr(-1),
+			wantTail:      nil,
 			wantClosed:    true,
 		},
 		{
@@ -476,7 +476,7 @@ func TestPodLogs(t *testing.T) {
 			wantStream:    1,
 			wantFactory:   1,
 			wantContainer: "api",
-			wantTail:      int64Ptr(-1),
+			wantTail:      nil,
 			wantClosed:    true,
 		},
 		{
@@ -495,7 +495,7 @@ func TestPodLogs(t *testing.T) {
 			wantStream:     1,
 			wantFactory:    1,
 			wantContainer:  "api",
-			wantTail:       int64Ptr(-1),
+			wantTail:       nil,
 			wantClosed:     true,
 			errContainsAll: []string{"copy boom", "close boom"},
 			checkOut: func(t *testing.T, out string) {
@@ -518,7 +518,7 @@ func TestPodLogs(t *testing.T) {
 			wantStream:    1,
 			wantFactory:   1,
 			wantContainer: "api",
-			wantTail:      int64Ptr(-1),
+			wantTail:      nil,
 			wantClosed:    true,
 		},
 		{

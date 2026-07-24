@@ -47,11 +47,16 @@ func newLogsCommand(app *App) *cobra.Command {
 				return err
 			}
 
-			stream, err := rt.StreamPodLogs(cmd.Context(), namespace, podName, &corev1.PodLogOptions{
+			opts := &corev1.PodLogOptions{
 				Container: selected,
 				Follow:    follow,
-				TailLines: &tail,
-			})
+			}
+			if tail != -1 {
+				t := tail
+				opts.TailLines = &t
+			}
+
+			stream, err := rt.StreamPodLogs(cmd.Context(), namespace, podName, opts)
 			if err != nil {
 				return fmt.Errorf("logs pod %q in namespace %q: %w", podName, namespace, err)
 			}
@@ -91,6 +96,9 @@ func regularContainerNames(pod *corev1.Pod) []string {
 }
 
 func selectContainer(pod *corev1.Pod, requested string) (string, error) {
+	if pod == nil {
+		return "", fmt.Errorf("pod is nil")
+	}
 	names := regularContainerNames(pod)
 	if len(names) == 0 {
 		return "", fmt.Errorf("pod %q has no containers", pod.Name)
