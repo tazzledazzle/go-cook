@@ -12,7 +12,7 @@ func main() {
 	client, err := etcd.NewClient([]string{"localhost:2379"})
 
 	if err != nil {
-		log.Fatalf("failed to connect to etcd: %w", err)
+		log.Fatalf("failed to connect to etcd: %v", err)
 	}
 
 	defer client.Close()
