@@ -112,6 +112,9 @@ func RestartCount(pod corev1.Pod) int32 {
 
 // WritePodTable writes a kubectl-style Pod table sorted by name.
 func WritePodTable(w io.Writer, list *corev1.PodList, now time.Time) error {
+	if list == nil {
+		list = &corev1.PodList{}
+	}
 	pods := append([]corev1.Pod(nil), list.Items...)
 	sort.Slice(pods, func(i, j int) bool {
 		return pods[i].Name < pods[j].Name
