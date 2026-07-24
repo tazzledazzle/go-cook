@@ -23,7 +23,7 @@ type ResourceRequirements struct {
 }
 
 type Container struct {
-	name      string                `json:"name"`
+	Name      string                `json:"name"`
 	Image     string                `json:"image"`
 	Resources *ResourceRequirements `json:"resources,omitempty"`
 }
