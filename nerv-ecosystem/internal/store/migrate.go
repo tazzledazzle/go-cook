@@ -78,7 +78,7 @@ func (s *Store) AppliedMigrations(ctx context.Context) ([]MigrationRecord, error
 	if err != nil {
 		return nil, fmt.Errorf("list applied migrations: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var records []MigrationRecord
 	for rows.Next() {

@@ -40,7 +40,7 @@ func TestReopen_DoesNotReapplyMigrations(t *testing.T) {
 
 			second, err := store.Open(dbPath)
 			require.NoError(t, err)
-			defer second.Close()
+			defer func() { _ = second.Close() }()
 
 			secondRecords, err := second.AppliedMigrations(ctx)
 			require.NoError(t, err)
@@ -85,11 +85,11 @@ func TestWALMultiReader_SecondHandleSeesFirstHandlesWrite(t *testing.T) {
 
 			handleA, err := sql.Open("sqlite", dsn)
 			require.NoError(t, err)
-			defer handleA.Close()
+			defer func() { _ = handleA.Close() }()
 
 			handleB, err := sql.Open("sqlite", dsn)
 			require.NoError(t, err)
-			defer handleB.Close()
+			defer func() { _ = handleB.Close() }()
 
 			ctx := context.Background()
 

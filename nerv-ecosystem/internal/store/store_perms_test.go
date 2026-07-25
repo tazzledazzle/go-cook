@@ -34,7 +34,7 @@ func TestOpen_StoreDirectoryAndFilePermissions(t *testing.T) {
 
 			st, err := store.Open(dbPath)
 			require.NoError(t, err)
-			defer st.Close()
+			defer func() { _ = st.Close() }()
 
 			dirInfo, err := os.Stat(storeDir)
 			require.NoError(t, err)

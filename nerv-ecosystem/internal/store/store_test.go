@@ -30,7 +30,7 @@ func TestOpen_CreatesWALModeStoreWithFTS5Table(t *testing.T) {
 			st, err := store.Open(dbPath)
 			require.NoError(t, err)
 			require.NotNil(t, st)
-			defer st.Close()
+			defer func() { _ = st.Close() }()
 
 			ctx := context.Background()
 
@@ -65,7 +65,7 @@ func TestOpen_CreatesMissingParentDirectory(t *testing.T) {
 			st, err := store.Open(dbPath)
 			require.NoError(t, err)
 			require.NotNil(t, st)
-			defer st.Close()
+			defer func() { _ = st.Close() }()
 
 			_, statErr := os.Stat(filepath.Dir(dbPath))
 			require.NoError(t, statErr)
@@ -95,7 +95,7 @@ func TestStore_HasTable(t *testing.T) {
 			dbPath := filepath.Join(t.TempDir(), "registry.db")
 			st, err := store.Open(dbPath)
 			require.NoError(t, err)
-			defer st.Close()
+			defer func() { _ = st.Close() }()
 
 			has, err := st.HasTable(context.Background(), tt.tableName)
 			require.NoError(t, err)

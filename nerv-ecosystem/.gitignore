@@ -1,0 +1,4 @@
+/modular
+*.db
+*.db-wal
+*.db-shm

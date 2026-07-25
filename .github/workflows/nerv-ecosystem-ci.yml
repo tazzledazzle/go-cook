@@ -1,0 +1,36 @@
+name: nerv-ecosystem CI
+
+on:
+  push:
+    paths:
+      - "nerv-ecosystem/**"
+      - ".github/workflows/nerv-ecosystem-ci.yml"
+  pull_request:
+    paths:
+      - "nerv-ecosystem/**"
+      - ".github/workflows/nerv-ecosystem-ci.yml"
+
+defaults:
+  run:
+    working-directory: nerv-ecosystem
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: nerv-ecosystem/go.mod
+
+      - name: Test (race detector, PLAT-03)
+        run: go test ./... -race -count=1
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.12.2
+          working-directory: nerv-ecosystem

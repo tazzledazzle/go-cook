@@ -26,7 +26,7 @@ func newStatusCommand(storePath *string) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("open store: %w", err)
 			}
-			defer st.Close()
+			defer func() { _ = st.Close() }()
 
 			mode, err := st.JournalMode(cmd.Context())
 			if err != nil {
@@ -38,9 +38,11 @@ func newStatusCommand(storePath *string) *cobra.Command {
 				return fmt.Errorf("check fts5 table: %w", err)
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(),
+			if _, err := fmt.Fprintf(cmd.OutOrStdout(),
 				"store:        %s\njournal_mode: %s\nfts5 ready:   %v\n",
-				path, mode, hasFTS)
+				path, mode, hasFTS); err != nil {
+				return fmt.Errorf("write status output: %w", err)
+			}
 			return nil
 		},
 	}

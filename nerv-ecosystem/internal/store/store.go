@@ -93,7 +93,7 @@ func (s *Store) SchemaObjects(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list schema objects: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var names []string
 	for rows.Next() {
