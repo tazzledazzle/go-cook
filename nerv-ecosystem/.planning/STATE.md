@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-07-24T23:55:23.802Z"
-last_activity: 2026-07-24
+last_updated: "2026-07-25T00:12:06.688Z"
+last_activity: 2026-07-25
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
-  percent: 0
+  completed_plans: 2
+  percent: 20
 ---
 
 # Project State
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-07-24)
 ## Current Position
 
 Phase: 1 of 5 (Platform Foundation)
-Plan: 1 of 2 in current phase
-Status: Executing — 01-01 complete, 01-02 not started
-Last activity: 2026-07-24 — Executed 01-01-PLAN.md (walking skeleton: store + status command, TDD RED-GREEN)
+Plan: 2 of 2 in current phase
+Status: Ready to execute
+Last activity: 2026-07-25
 
-Progress: [█████░░░░░] 50%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -51,6 +51,7 @@ Progress: [█████░░░░░] 50%
 - Trend: N/A (first plan executed)
 
 *Updated after each plan completion*
+| Phase 01-platform-foundation P02 | 45 min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,7 @@ Recent decisions affecting current work:
 - [Roadmap]: Data-dependency order fixed as generate → publish → deps → search; Platform Foundation split out as its own Phase 1 (CLI skeleton + SQLite/FTS5 store + TDD scaffolding) rather than folded into Generate, to keep phase count within "standard" granularity (5-8) and keep Phase 2 focused purely on scaffolding.
 - [Roadmap]: Observability pipeline polish (OTel Collector/Prometheus/Grafana stack, cross-service trace test, Python/Java real API-diff upgrades) is v2 scope per research — not a v1 phase.
 - [Roadmap]: Local OCI storage defaults to filesystem `ocilayout` via `oras-go v2` (no daemon); zot remains an optional v1.x escape hatch, not an MVP dependency.
+- [Phase 01-platform-foundation]: Store file needs an explicit os.Chmod(0o600) after Open — modernc.org/sqlite creates the file under the process umask (observed group/other-readable), not a fixed 0600 as the plan assumed; found via 01-02's permission regression test
 
 ### Pending Todos
 
@@ -82,6 +84,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-24T23:55:23.797Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-07-25T00:11:48.420Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None

@@ -12,7 +12,7 @@ Nerv Ecosystem is a single-binary Go CLI that rebuilds Tableau's Modular/Nerv pa
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Platform Foundation** - Single-binary CLI skeleton, embedded SQLite store (WAL + FTS5), and TDD scaffolding every later phase builds on
+- [x] **Phase 1: Platform Foundation** - Single-binary CLI skeleton, embedded SQLite store (WAL + FTS5), and TDD scaffolding every later phase builds on (completed 2026-07-25)
 - [ ] **Phase 2: Generate** - Engineer scaffolds a provenance-tracked Go/Java/Python service from local templates in one command
 - [ ] **Phase 3: Publish** - Engineer publishes a package to a local OCI store; breaking changes are blocked without a matching semver major bump
 - [ ] **Phase 4: Dependency Graph** - Engineer sees direct and transitive consumer blast radius for a package before a breaking release
@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01-PLAN.md — Walking skeleton: Go module + Cobra CLI + WAL/FTS5 store, `modular status` proving it end-to-end (wave 1)
-- [ ] 01-02-PLAN.md — Reopen safety, live FTS5 trigger sync, permission/exit-code hardening, `-race` + lint enforcement harness (wave 2)
+- [x] 01-02-PLAN.md — Reopen safety, live FTS5 trigger sync, permission/exit-code hardening, `-race` + lint enforcement harness (wave 2)
 
 ### Phase 2: Generate
 **Goal**: Engineer can scaffold a compliant, provenance-tracked Go/Java/Python service from local filesystem templates with one command
@@ -113,7 +113,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Platform Foundation | 1/2 | In Progress|  |
+| 1. Platform Foundation | 2/2 | Complete   | 2026-07-25 |
 | 2. Generate | 0/3 | Not started | - |
 | 3. Publish | 0/3 | Not started | - |
 | 4. Dependency Graph | 0/2 | Not started | - |
