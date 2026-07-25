@@ -11,7 +11,7 @@ progress:
   total_plans: 2
   completed_plans: 2
   percent: 20
-stopped_at: Phase 1 complete (2/2) — ready to discuss Phase 2
+stopped_at: Phase 2 context captured — ready to plan
 ---
 
 # Project State
