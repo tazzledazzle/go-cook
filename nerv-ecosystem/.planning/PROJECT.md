@@ -12,7 +12,9 @@ An engineer can generate a Go, Java, or Python service that is already CI-, Helm
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Single-binary local-first CLI with no cloud/daemon requirement — Phase 1
+- ✓ Embedded SQLite store (WAL + FTS5) as the sole system of record bootstrap — Phase 1
+- ✓ TDD scaffolding with table-driven tests under `go test -race` and CI lint enforcement — Phase 1
 
 ### Active
 
@@ -68,11 +70,11 @@ An engineer can generate a Go, Java, or Python service that is already CI-, Helm
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Working Modular-style CLI (not docs-only or marketing site) | Blueprint is an engineering platform; value is runnable generate/publish/deps/search | — Pending |
+| Working Modular-style CLI (not docs-only or marketing site) | Blueprint is an engineering platform; value is runnable generate/publish/deps/search | ✓ Good — Phase 1 CLI+store skeleton live |
 | v1 languages: Go + Java + Python | Multi-language proof without full historical surface area | — Pending |
 | Local FS templates; OCI + local registry + FS index; OTel→Prom/Grafana; GHA; K8s+Helm | Modern stand-ins for S3/Artifactory/Splunk/NR/GitLab while keeping paved-road semantics | — Pending |
-| Vertical end-to-end slices + mandatory TDD | Incremental verification; each capability must prove useful before the next | — Pending |
-| Go for the platform CLI | Idiomatic systems CLI; strong testing/race tooling; matches portfolio language | — Pending |
+| Vertical end-to-end slices + mandatory TDD | Incremental verification; each capability must prove useful before the next | ✓ Good — Phase 1 RED→GREEN gates + CI `-race`/lint |
+| Go for the platform CLI | Idiomatic systems CLI; strong testing/race tooling; matches portfolio language | ✓ Good — Go 1.25 module + Cobra walking skeleton |
 | Opt-in playground scope (no adoption mandate tooling) | Matches README non-goal; single-operator use | — Pending |
 
 ## Evolution
@@ -93,4 +95,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-24 after initialization*
+*Last updated: 2026-07-25 after Phase 1*
