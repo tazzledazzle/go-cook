@@ -59,6 +59,41 @@ func runMigrations(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
+// MigrationRecord describes one row of schema_migrations: the version
+// number and the timestamp it was recorded. Reopening an unchanged store
+// must return the same AppliedAt value for a given version — a changed
+// value means the migration was silently re-applied.
+type MigrationRecord struct {
+	Version   int
+	AppliedAt string
+}
+
+// AppliedMigrations returns every row in schema_migrations ordered by
+// version, giving callers (this package's own tests today, and future
+// phases eventually) a way to confirm schema state without reaching into
+// the unexported *sql.DB.
+func (s *Store) AppliedMigrations(ctx context.Context) ([]MigrationRecord, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT version, applied_at FROM schema_migrations ORDER BY version`)
+	if err != nil {
+		return nil, fmt.Errorf("list applied migrations: %w", err)
+	}
+	defer rows.Close()
+
+	var records []MigrationRecord
+	for rows.Next() {
+		var rec MigrationRecord
+		if err := rows.Scan(&rec.Version, &rec.AppliedAt); err != nil {
+			return nil, fmt.Errorf("scan applied migration: %w", err)
+		}
+		records = append(records, rec)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate applied migrations: %w", err)
+	}
+	return records, nil
+}
+
 func applyMigration(ctx context.Context, db *sql.DB, version int, sqlText string) error {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
