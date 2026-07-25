@@ -11,7 +11,7 @@ progress:
   total_plans: 2
   completed_plans: 2
   percent: 20
-stopped_at: Phase 2 context captured — ready to plan
+stopped_at: Phase 2 discuss done; plan-phase research blocked by resource_exhausted — resume after quota reset
 ---
 
 # Project State
