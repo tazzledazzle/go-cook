@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "nerv_ecosystem",
+  "project_id": "0bfdfae7-87e3-4f60-808f-3fd3f9d0b652"
+}
