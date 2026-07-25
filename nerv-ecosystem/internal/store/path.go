@@ -15,11 +15,11 @@ const defaultFileName = "registry.db"
 // the operator is standing in when they run modular.
 func DefaultPath() string {
 	if dir := os.Getenv("MODULAR_HOME"); dir != "" {
-		return filepath.Join(dir, defaultFileName)
+		return filepath.Clean(filepath.Join(dir, defaultFileName))
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return filepath.Join(".", defaultDirName, defaultFileName)
+		return filepath.Clean(filepath.Join(".", defaultDirName, defaultFileName))
 	}
-	return filepath.Join(home, defaultDirName, defaultFileName)
+	return filepath.Clean(filepath.Join(home, defaultDirName, defaultFileName))
 }

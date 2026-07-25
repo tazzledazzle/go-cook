@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -21,6 +22,18 @@ func NewRootCommand() *cobra.Command {
 		Use:          "modular",
 		Short:        "Nerv Ecosystem platform CLI",
 		SilenceUsage: true,
+		// --store-path is developer-supplied input, not untrusted network
+		// input (ASVS V5) — cleaning is still the proportionate control so
+		// redundant traversal segments never reach store.Open or the
+		// status output. Runs after flag parsing, before any subcommand's
+		// RunE, and mutates the same variable newStatusCommand holds a
+		// pointer to.
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if storePath != "" {
+				storePath = filepath.Clean(storePath)
+			}
+			return nil
+		},
 	}
 	root.PersistentFlags().StringVar(&storePath, "store-path", "",
 		"override the default store location (default: resolved via store.DefaultPath())")

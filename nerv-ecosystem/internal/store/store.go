@@ -53,6 +53,16 @@ func Open(path string) (*Store, error) {
 		return nil, fmt.Errorf("migrate store: %w", err)
 	}
 
+	// The driver creates the file using the process umask (typically
+	// world-readable, e.g. 0644), not a fixed 0600 — verified empirically
+	// under store_perms_test.go, so this cannot be left to the driver's
+	// default as originally assumed. Tighten explicitly rather than rely
+	// on umask, which callers of this CLI do not control.
+	if err := os.Chmod(path, 0o600); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("set store file permissions: %w", err)
+	}
+
 	return &Store{db: db, path: path}, nil
 }
 
