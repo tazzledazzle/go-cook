@@ -3,7 +3,10 @@ package main
 import (
 	"database/sql"
 	"encoding/csv"
+	"encoding/json"
+	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"strconv"
 )
@@ -80,4 +83,49 @@ func getProducts(db *sql.DB) ([]Product, error) {
 		products = append(products, product)
 	}
 	return products, nil
+}
+
+type WeatherData struct {
+	Temperature float64
+	Humidity    int
+	Conditions  string
+}
+
+func getWeather(city string) (*WeatherData, error) {
+	url := fmt.Sprintf("https://api.openweathermap.org/data/2.5/weather?q=%s&appid=YOUR_API_KEY", city)
+	response, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+	var data WeatherData
+	err = json.NewDecoder(response.Body).Decode(&data)
+	if err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+func highSpenders(customers []Customer) []Customer {
+	var spenders []Customer
+	for _, customer := range customers {
+		if customer.Purchase > 100 {
+			spenders = append(spenders, customer)
+		}
+	}
+	return spenders
+}
+
+func normalizePurchases(customers []Customer) []Customer {
+	maxPurchase := 0.0
+	for _, customer := range customers {
+		if customer.Purchase > maxPurchase {
+			maxPurchase = customer.Purchase
+		}
+	}
+
+	for i := range customers {
+		customers[i].Purchase /= maxPurchase
+	}
+	return customers
 }
