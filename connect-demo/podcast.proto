@@ -1,0 +1,19 @@
+// proto/podcast/v1/podcast.proto
+syntax = "proto3";
+package podcast.v1;
+option go_package = "example.com/connect-demo/gen/podcast/v1;podcastv1";
+
+message Podcast {
+  string id = 1;
+  string title = 2;
+  string host = 3;
+}
+
+message ListPodcastsRequest {}
+message ListPodcastsResponse {
+  repeated Podcast podcasts = 1;
+}
+
+service PodcastService {
+  rpc ListPodcasts(ListPodcastsRequest) returns (ListPodcastsResponse);
+}
