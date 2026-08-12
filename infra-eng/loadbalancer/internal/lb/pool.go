@@ -39,10 +39,10 @@ func (p *BackendPool) NextIndex() int {
 	return int(n % uint64(len(p.backends)))
 }
 
-// NextBackend returns next alive backend using round-robin, return nil if none alive.
-// NextBackend returns the next alive backend using round-robin,
-// skipping dead ones. Returns nil if none are alive.
-func (p *BackendPool) NextBackend() *Backend {
+// NextBackendFiltered returns the next alive backend using round-robin,
+// skipping dead ones and any that fail the provided filter. filter may
+// be nil, in which case only aliveness is checked.
+func (p *BackendPool) NextBackendFiltered(filter func(*Backend) bool) *Backend {
 	n := len(p.backends)
 	if n == 0 {
 		return nil
@@ -52,13 +52,22 @@ func (p *BackendPool) NextBackend() *Backend {
 	for i := 0; i < n; i++ {
 		idx := (start + i) % n
 		b := p.backends[idx]
-		if b.GetAlive() {
-			return b
+		if !b.GetAlive() {
+			continue
 		}
+		if filter != nil && !filter(b) {
+			continue
+		}
+		return b
 	}
 	return nil
 }
 
+// NextBackend returns the next alive backend using round-robin,
+// skipping dead ones.
+func (p *BackendPool) NextBackend() *Backend {
+	return p.NextBackendFiltered(nil)
+}
 func checkBackend(b *Backend) {
 	healthURL := b.URL.String() + "/healthz"
 

@@ -10,10 +10,20 @@ import (
 	"syscall"
 	"time"
 
+	"loadbalancer/internal/circuitbreaker"
 	"loadbalancer/internal/lb"
 	"loadbalancer/internal/ratelimit"
 )
 
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (r *statusRecorder) WriteHeader(code int) {
+	r.status = code
+	r.ResponseWriter.WriteHeader(code)
+}
 func main() {
 	pool, err := lb.NewBackendPool([]string{
 		"http://localhost:9001",
@@ -24,6 +34,7 @@ func main() {
 	}
 
 	go pool.StartHealthCheck(5 * time.Second)
+	breakers := circuitbreaker.NewRegistry(3, 5*time.Second)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -31,14 +42,24 @@ func main() {
 		w.Write([]byte("ok"))
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		backend := pool.NextBackend()
+		backend := pool.NextBackendFiltered(func(b *lb.Backend) bool {
+			return breakers.Allow(b.URL.Host)
+		})
 		if backend == nil {
 			http.Error(w, "no backends available", http.StatusServiceUnavailable)
 			return
 		}
+
+		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 		start := time.Now()
-		backend.ReverseProxy.ServeHTTP(w, r)
+		backend.ReverseProxy.ServeHTTP(rec, r)
 		backend.RecordRequest(time.Since(start))
+
+		if rec.status >= 500 {
+			breakers.RecordFailure(backend.URL.Host)
+		} else {
+			breakers.RecordSuccess(backend.URL.Host)
+		}
 	})
 
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +76,7 @@ func main() {
 		}
 	})
 
-	limiter := ratelimit.NewRegistry(5, 1)
+	limiter := ratelimit.NewRegistry(100, 20)
 	handler := limiter.Middleware(mux)
 
 	server := &http.Server{
