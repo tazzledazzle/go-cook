@@ -1,6 +1,8 @@
 package lb
 
 import (
+	"log"
+	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"sync"
@@ -13,6 +15,11 @@ type Backend struct {
 	ReverseProxy *httputil.ReverseProxy
 
 	mu sync.RWMutex
+
+	// Metrics - accessed atomically
+	requestCount uint64
+	errorCount   uint64
+	totalLatency int64 // nanoseconds, summed
 }
 
 func NewBackend(rawURL string) (*Backend, error) {
@@ -23,11 +30,19 @@ func NewBackend(rawURL string) (*Backend, error) {
 
 	proxy := httputil.NewSingleHostReverseProxy(u)
 
-	return &Backend{
+	b := &Backend{
 		URL:          u,
 		Alive:        true,
 		ReverseProxy: proxy,
-	}, nil
+	}
+
+	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+		log.Printf("passive check: backend %s failed request: %v", u.Host, err)
+		b.SetAlive(false)
+		http.Error(w, "backend unavailable", http.StatusBadGateway)
+	}
+
+	return b, nil
 }
 
 func (b *Backend) SetAlive(alive bool) {
