@@ -24,6 +24,15 @@ func NewBackendPool(rawURLs []string) (*BackendPool, error) {
 	return pool, nil
 }
 
+// Stats returns a snapshot of every backend's metrics
+func (p *BackendPool) Stats() []BackendStats {
+	stats := make([]BackendStats, 0, len(p.backends))
+	for _, b := range p.backends {
+		stats = append(stats, b.Stats())
+	}
+	return stats
+}
+
 // NextIndex atomically advances and returns the next round-robin index
 func (p *BackendPool) NextIndex() int {
 	n := atomic.AddUint64(&p.current, 1)
@@ -31,14 +40,17 @@ func (p *BackendPool) NextIndex() int {
 }
 
 // NextBackend returns next alive backend using round-robin, return nil if none alive.
+// NextBackend returns the next alive backend using round-robin,
+// skipping dead ones. Returns nil if none are alive.
 func (p *BackendPool) NextBackend() *Backend {
-	if len(p.backends) == 0 {
+	n := len(p.backends)
+	if n == 0 {
 		return nil
 	}
 
-	// try at most len(backends) time
-	for i := 0; i < len(p.backends); i++ {
-		idx := p.NextIndex()
+	start := p.NextIndex()
+	for i := 0; i < n; i++ {
+		idx := (start + i) % n
 		b := p.backends[idx]
 		if b.GetAlive() {
 			return b

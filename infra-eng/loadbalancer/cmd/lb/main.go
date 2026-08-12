@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"loadbalancer/internal/lb"
+	"loadbalancer/internal/ratelimit"
 )
 
 func main() {
@@ -34,12 +36,31 @@ func main() {
 			http.Error(w, "no backends available", http.StatusServiceUnavailable)
 			return
 		}
+		start := time.Now()
 		backend.ReverseProxy.ServeHTTP(w, r)
+		backend.RecordRequest(time.Since(start))
 	})
+
+	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
+		for _, s := range pool.Stats() {
+			aliveVal := 0
+			if s.Alive {
+				aliveVal = 1
+			}
+			fmt.Fprintf(w, "lb_backend_up{host=\"%s\"} %d\n", s.Host, aliveVal)
+			fmt.Fprintf(w, "lb_backend_requests_total{host=\"%s\"} %d\n", s.Host, s.RequestCount)
+			fmt.Fprintf(w, "lb_backend_errors_total{host=\"%s\"} %d\n", s.Host, s.ErrorCount)
+			fmt.Fprintf(w, "lb_backend_avg_latency_ms{host=\"%s\"} %.3f\n", s.Host, s.AvgLatencyMs)
+		}
+	})
+
+	limiter := ratelimit.NewRegistry(5, 1)
+	handler := limiter.Middleware(mux)
 
 	server := &http.Server{
 		Addr:    ":8080",
-		Handler: mux,
+		Handler: handler,
 	}
 
 	// Run the server in a goroutine so main() is free to block on the signal.
