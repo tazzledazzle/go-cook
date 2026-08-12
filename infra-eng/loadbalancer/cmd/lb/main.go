@@ -8,7 +8,10 @@ import (
 )
 
 func main() {
-	backend, err := lb.NewBackend("http://localhost:9001")
+	pool, err := lb.NewBackendPool([]string{
+		"http://localhost:9001",
+		"http://localhost:9002",
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -19,6 +22,11 @@ func main() {
 		w.Write([]byte("ok"))
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		backend := pool.NextBackend()
+		if backend == nil {
+			http.Error(w, "no backends available", http.StatusServiceUnavailable)
+			return
+		}
 		backend.ReverseProxy.ServeHTTP(w, r)
 	})
 
