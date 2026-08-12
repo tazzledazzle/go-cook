@@ -1,6 +1,10 @@
 package lb
 
-import "sync/atomic"
+import (
+	"net/http"
+	"sync/atomic"
+	"time"
+)
 
 type BackendPool struct {
 	backends []*Backend
@@ -41,4 +45,37 @@ func (p *BackendPool) NextBackend() *Backend {
 		}
 	}
 	return nil
+}
+
+func checkBackend(b *Backend) {
+	healthURL := b.URL.String() + "/healthz"
+
+	client := http.Client{
+		Timeout: 2 * time.Second,
+	}
+
+	resp, err := client.Get(healthURL)
+	if err != nil {
+		b.SetAlive(false)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	b.SetAlive(resp.StatusCode == http.StatusOK)
+}
+
+func (p *BackendPool) HealthCheck() {
+	for _, b := range p.backends {
+		checkBackend(b)
+	}
+}
+
+func (p *BackendPool) StartHealthCheck(interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		p.HealthCheck()
+	}
 }
