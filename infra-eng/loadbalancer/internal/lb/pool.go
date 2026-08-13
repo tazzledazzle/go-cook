@@ -100,3 +100,37 @@ func (p *BackendPool) StartHealthCheck(interval time.Duration) {
 		p.HealthCheck()
 	}
 }
+
+// GroupedPool holds a separate BackendPool per named group (e.g. "stable", "canary"),
+// so traffic shaping can pick a group and then round-robin within it.
+type GroupedPool struct {
+	groups map[string]*BackendPool
+}
+
+// NewGroupedPool builds a GroupedPool from a map of group name -> backend URLs.
+func NewGroupedPool(groupURLs map[string][]string) (*GroupedPool, error) {
+	groups := make(map[string]*BackendPool)
+	for name, urls := range groupURLs {
+		pool, err := NewBackendPool(urls)
+		if err != nil {
+			return nil, err
+		}
+		groups[name] = pool
+	}
+	return &GroupedPool{groups: groups}, nil
+}
+
+// Group returns the BackendPool for the given group name, or nil if unknown.
+func (gp *GroupedPool) Group(name string) *BackendPool {
+	return gp.groups[name]
+}
+
+// AllPools returns every group's pool — useful for wiring health checks
+// across all groups without needing to know group names ahead of time.
+func (gp *GroupedPool) AllPools() []*BackendPool {
+	pools := make([]*BackendPool, 0, len(gp.groups))
+	for _, p := range gp.groups {
+		pools = append(pools, p)
+	}
+	return pools
+}
