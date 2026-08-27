@@ -49,3 +49,27 @@ func TestRegisterAndGet(t *testing.T) {
 		t.Error("Get().CreatedAt should be auto-populated, got zero value")
 	}
 }
+
+func TestRegisterDuplicateIDFails(t *testing.T) {
+	store := newTestStore(t)
+
+	p := Project{ID: "proj-dup", Name: "svc", Language: "go"}
+
+	if err := store.Register(p); err != nil {
+		t.Fatalf("first Register() error = %v", err)
+	}
+
+	err := store.Register(p)
+	if err != ErrAlreadyExists {
+		t.Errorf("second Register() error = %v", err)
+	}
+}
+
+func TestGetMissingReturnsNotFound(t *testing.T) {
+	store := newTestStore(t)
+
+	_, err := store.Get("does-not-exist")
+	if err != ErrNotFound {
+		t.Errorf("Get() error = %v, want ErrNotFound", err)
+	}
+}
