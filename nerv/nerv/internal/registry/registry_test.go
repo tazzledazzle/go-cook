@@ -93,6 +93,9 @@ func TestListFiltersByLanguage(t *testing.T) {
 	if err != nil {
 		t.Errorf("List(\"go\") error = %v", err)
 	}
+	if len(goProjects) != 2 {
+		t.Errorf("List(\"go\") = %v, want 2", len(goProjects))
+	}
 
 	all, err := store.List("")
 	if err != nil {
