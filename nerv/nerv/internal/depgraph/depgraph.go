@@ -26,6 +26,9 @@ var (
 	// ErrZeroMajorNotAllowed is returned when a 0.x dependency is used and
 	// the policy doesn't explicitly allow pre-1.0 dependencies.
 	ErrZeroMajorNotAllowed = errors.New("depgraph: 0.x (pre-1.0) dependencies are not allowed by policy")
+	// ErrPackageNotFound is returned when a pinned dependency's exact
+	// version could not be found in any configured package registry.
+	ErrPackageNotFound = errors.New("depgraph: pinned version was not found in any configured package registry")
 )
 
 // semverPattern matches an exact pinned version: MAJOR.MINOR.PATCH with an
@@ -42,6 +45,14 @@ type Dependency struct {
 	Constraint string // must be an exact pinned semver under default policy
 }
 
+// PackageExistenceChecker verifies a pinned dependency actually exists
+// in some backing package registry (internal Artifactory, PyPI, npm,
+// etc). Distinct from VulnerabilityChecker: this checks "does this
+// version exist at all", not "is this specific version known-bad".
+type PackageExistenceChecker interface {
+	Exists(name, version string) (bool, error)
+}
+
 // Policy controls what the Enforcer allows.
 type Policy struct {
 	// AllowZeroMajor permits 0.x dependencies when true. Default (false)
@@ -51,6 +62,10 @@ type Policy struct {
 	// exactly-pinned versions that are on a known-vulnerable list. Nil
 	// means "skip the vulnerability check" — fully backward compatible.
 	Checker VulnerabilityChecker
+	// ExistenceChecker, if non-nil, is consulted to verify the pinned
+	// version actually exists in a real package registry. Nil means
+	// "skip the existence check" — fully backward compatible.
+	ExistenceChecker PackageExistenceChecker
 }
 
 // Enforcer validates dependency constraints against a Policy.
@@ -92,6 +107,16 @@ func (e *Enforcer) Validate(dep Dependency) error {
 	if e.policy.Checker != nil {
 		if vulnerable, reason := e.policy.Checker.IsVulnerable(dep.Name, c); vulnerable {
 			return fmt.Errorf("depgraph: dependency %q constraint %q (%s): %w", dep.Name, c, reason, ErrVulnerableVersion)
+		}
+	}
+
+	if e.policy.ExistenceChecker != nil {
+		exists, err := e.policy.ExistenceChecker.Exists(dep.Name, c)
+		if err != nil {
+			return fmt.Errorf("depgraph: checking existence of %q constraint %q: %w", dep.Name, c, err)
+		}
+		if !exists {
+			return fmt.Errorf("depgraph: dependency %q constraint %q: %w", dep.Name, c, ErrPackageNotFound)
 		}
 	}
 

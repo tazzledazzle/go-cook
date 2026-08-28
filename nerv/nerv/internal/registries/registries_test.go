@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 )
 
@@ -14,12 +15,10 @@ func newFakeRegistryServer(t *testing.T, known []string) *httptest.Server {
 	t.Helper()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		for _, k := range known {
-			if r.URL.Path == k {
-				w.WriteHeader(http.StatusOK)
-				_, _ = w.Write([]byte(`{}`))
-				return
-			}
+		if slices.Contains(known, r.URL.EscapedPath()) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{}`))
+			return
 		}
 		w.WriteHeader(http.StatusNotFound)
 	}))
@@ -68,8 +67,10 @@ func TestNpmClientExists(t *testing.T) {
 }
 
 func TestNpmClientHandlesScopedPackage(t *testing.T) {
-	// %40 = "@", %2f = "/" — url.PathEscape encodes both.
-	srv := newFakeRegistryServer(t, []string{"/%40angular%2Fcore/16.0.0"})
+	// url.PathEscape leaves "@" unescaped in a path segment per RFC 3986
+	// §3.3, but does escape "/" as %2F — so a scoped package like
+	// "@angular/core" becomes "@angular%2Fcore", not "%40angular%2Fcore".
+	srv := newFakeRegistryServer(t, []string{"/@angular%2Fcore/16.0.0"})
 	client := NewNpmClientWithBaseURL(srv.URL)
 
 	exists, err := client.Exists("@angular/core", "16.0.0")
