@@ -15,7 +15,9 @@ import (
 	"tazzledazzle/nerv/nerv/internal/api"
 	"tazzledazzle/nerv/nerv/internal/cihook"
 	"tazzledazzle/nerv/nerv/internal/depgraph"
+	"tazzledazzle/nerv/nerv/internal/manifest"
 	"tazzledazzle/nerv/nerv/internal/metrics"
+	"tazzledazzle/nerv/nerv/internal/registries"
 	"tazzledazzle/nerv/nerv/internal/registry"
 	"tazzledazzle/nerv/nerv/internal/template"
 	"time"
@@ -52,6 +54,8 @@ func main() {
 	defer closeFn()
 
 	switch os.Args[1] {
+	case "lint":
+		a.cmdLint(os.Args[2:])
 	case "serve":
 		a.cmdServe(os.Args[2:])
 	case "new":
@@ -73,6 +77,7 @@ Usage:
   nervctl new --lang=<language> --name=<project-name> [--dest=<dir>]
   nervctl list [--lang=<language>]
   nervctl serve [--addr=:8080] [--dest=<dir>]
+  nervctl lint --file=<manifest-path> [--check-vulnerabilities=true] [--check-existence=false]
   nervctl serve-metrics [--addr=:9090]`)
 }
 
@@ -254,6 +259,51 @@ func (a *app) cmdNew(args []string) {
 	a.metrics.RecordProjectGenerated(*lang)
 
 	fmt.Printf("Generated project %q (id=%s)\n  path:     %s\n  pipeline: %s\n", *name, projectID, projectPath, pipelineRef)
+}
+
+func (a *app) cmdLint(args []string) {
+	fs := newFlagSet("lint")
+	file := fs.String("file", "nerv-deps.json", "path to the dependency manifest")
+	checkVuln := fs.Bool("check-vulnerabilities", true, "check pinned versions against the known-vulnerable list (no network required)")
+	checkExistence := fs.Bool("check-existence", false, "verify pinned versions actually exist in PyPI/npm (requires network)")
+	mustParse(fs, args)
+
+	m, err := manifest.Load(*file)
+	if err != nil {
+		log.Fatalf("nervctl lint: %v", err)
+	}
+
+	policy := depgraph.Policy{}
+	if *checkVuln {
+		policy.Checker = depgraph.NewSTARIncidentVulnerabilityList()
+	}
+	if *checkExistence {
+		policy.ExistenceChecker = registries.NewMultiIndex(
+			registries.NamedIndex{Name: "pypi", Index: registries.NewPyPIClient()},
+			registries.NamedIndex{Name: "npm", Index: registries.NewNpmClient()},
+		)
+	}
+
+	enforcer := depgraph.NewEnforcer(policy)
+	deps := m.ToDependencies()
+
+	fmt.Printf("Linting %q (%d dependencies)\n", m.Name, len(deps))
+
+	var failed bool
+	for _, dep := range deps {
+		if err := enforcer.Validate(dep); err != nil {
+			fmt.Printf("  FAIL  %s@%s: %v\n", dep.Name, dep.Constraint, err)
+			failed = true
+			continue
+		}
+		fmt.Printf("  OK    %s@%s\n", dep.Name, dep.Constraint)
+	}
+
+	if failed {
+		fmt.Println("\nlint failed: one or more dependencies violate policy")
+		os.Exit(1)
+	}
+	fmt.Println("\nlint passed: all dependencies comply with policy")
 }
 
 // parseDeps parses a comma-separated "name@version,name@version" string

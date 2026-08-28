@@ -1,0 +1,8 @@
+{
+  "name": "widget-api",
+  "language": "go",
+  "dependencies": [
+    {"name": "otel-sdk", "version": "1.4.2"},
+    {"name": "grpc-go", "version": "1.60.1"}
+  ]
+}
