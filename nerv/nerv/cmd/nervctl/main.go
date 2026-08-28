@@ -25,6 +25,7 @@ type app struct {
 	reg      registry.Registrar
 	engine   *template.Engine
 	resolver *depgraph.Resolver
+	graph    *depgraph.Graph
 	hook     cihook.CIHook
 	metrics  *metrics.Metrics
 }
@@ -102,7 +103,7 @@ func buildApp(dataDir string) (*app, func(), error) {
 	hook := cihook.NewStubHook()
 	m := metrics.New()
 
-	a := &app{reg: reg, engine: engine, resolver: resolver, hook: hook, metrics: m}
+	a := &app{reg: reg, engine: engine, resolver: resolver, graph: depgraph.NewGraph(), hook: hook, metrics: m}
 
 	closeFn := func() {
 		if err := reg.Close(); err != nil {
@@ -153,6 +154,7 @@ func (a *app) cmdServe(args []string) {
 		Reg:      a.reg,
 		Engine:   a.engine,
 		Resolver: a.resolver,
+		Graph:    a.graph,
 		Hook:     a.hook,
 		Metrics:  a.metrics,
 		DestRoot: *dest,

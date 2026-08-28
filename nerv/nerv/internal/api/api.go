@@ -25,6 +25,7 @@ type Server struct {
 	Reg      registry.Registrar
 	Engine   *template.Engine
 	Resolver *depgraph.Resolver
+	Graph    *depgraph.Graph
 	Hook     cihook.CIHook
 	Metrics  *metrics.Metrics
 	DestRoot string // root directory generated projects are written under
@@ -51,6 +52,11 @@ type NewProjectResponse struct {
 	PipelineConfig string            `json:"pipeline_config"`
 }
 
+// DependsOnRequest is the JSON body for POST /projects/{id}/depends-on.
+type DependsOnRequest struct {
+	DependsOnID string `json:"depends_on_id"`
+}
+
 // errorResponse is the JSON body for any non-2xx response.
 type errorResponse struct {
 	Error string `json:"error"`
@@ -63,6 +69,8 @@ func (s *Server) Router() *http.ServeMux {
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
 	mux.HandleFunc("POST /projects", s.handleCreateProject)
 	mux.HandleFunc("GET /projects", s.handleListProjects)
+	mux.HandleFunc("POST /projects/{id}/depends-on", s.handleAddDependency)
+	mux.HandleFunc("GET /projects/{id}/dependents", s.handleGetDependents)
 	mux.Handle("GET /metrics", s.Metrics.Handler())
 	return mux
 }
@@ -165,4 +173,59 @@ func writeJSON(w http.ResponseWriter, status int, body interface{}) {
 
 func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, errorResponse{Error: msg})
+}
+
+func (s *Server) handleAddDependency(w http.ResponseWriter, r *http.Request) {
+	fromID := r.PathValue("id")
+
+	var req DependsOnRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body: %v", err))
+		return
+	}
+	if req.DependsOnID == "" {
+		writeError(w, http.StatusBadRequest, "depends_on_id is required")
+		return
+	}
+
+	// Both endpoints must be real, registered projects — otherwise the
+	// graph could reference projects that were never actually generated.
+	if _, err := s.Reg.Get(fromID); err != nil {
+		writeError(w, http.StatusNotFound, fmt.Sprintf("project %q not found: %v", fromID, err))
+		return
+	}
+	if _, err := s.Reg.Get(req.DependsOnID); err != nil {
+		writeError(w, http.StatusNotFound, fmt.Sprintf("project %q not found: %v", req.DependsOnID, err))
+		return
+	}
+
+	if err := s.Graph.AddEdge(fromID, req.DependsOnID); err != nil {
+		// Cycle and self-dependency are client errors, not server errors.
+		writeError(w, http.StatusConflict, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]interface{}{
+		"from":       fromID,
+		"depends_on": req.DependsOnID,
+	})
+}
+
+func (s *Server) handleGetDependents(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	if _, err := s.Reg.Get(id); err != nil {
+		writeError(w, http.StatusNotFound, fmt.Sprintf("project %q not found: %v", id, err))
+		return
+	}
+
+	dependents := s.Graph.Dependents(id)
+	if dependents == nil {
+		dependents = []string{}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"project_id": id,
+		"dependents": dependents,
+	})
 }

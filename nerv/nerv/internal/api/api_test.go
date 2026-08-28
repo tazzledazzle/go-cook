@@ -46,6 +46,7 @@ func newTestServer(t *testing.T) *Server {
 		Engine:   template.NewEngine(catalog, pointers),
 		Resolver: depgraph.NewResolver(depgraph.NewEnforcer(depgraph.Policy{}), depgraph.NewCache()),
 		Hook:     cihook.NewStubHook(),
+		Graph:    depgraph.NewGraph(),
 		Metrics:  metrics.New(),
 		DestRoot: filepath.Join(dir, "generated"),
 	}
@@ -205,5 +206,100 @@ func TestCreateProjectResponseHasNonZeroCreatedAt(t *testing.T) {
 	}
 	if resp.Project.CreatedAt.IsZero() {
 		t.Error("Project.CreatedAt in POST response is zero, want it populated at creation time")
+	}
+}
+
+func TestAddDependencyAndGetDependents(t *testing.T) {
+	srv := newTestServer(t)
+	mux := srv.Router()
+
+	create := func(name string) string {
+		body, _ := json.Marshal(NewProjectRequest{Name: name, Language: "go"})
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/projects", bytes.NewReader(body))
+		mux.ServeHTTP(rec, req)
+		if rec.Code != 201 {
+			t.Fatalf("creating %q: status = %d, body = %s", name, rec.Code, rec.Body.String())
+		}
+		var resp NewProjectResponse
+		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("unmarshaling create response for %q: %v", name, err)
+		}
+		return resp.Project.ID
+	}
+
+	apiID := create("api-svc")
+	authID := create("auth-lib")
+
+	depBody, _ := json.Marshal(DependsOnRequest{DependsOnID: authID})
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/projects/"+apiID+"/depends-on", bytes.NewReader(depBody))
+	mux.ServeHTTP(rec, req)
+	if rec.Code != 201 {
+		t.Fatalf("POST depends-on status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	rec2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("GET", "/projects/"+authID+"/dependents", nil)
+	mux.ServeHTTP(rec2, req2)
+	if rec2.Code != 200 {
+		t.Fatalf("GET dependents status = %d, body = %s", rec2.Code, rec2.Body.String())
+	}
+
+	var depResp struct {
+		Dependents []string `json:"dependents"`
+	}
+	if err := json.Unmarshal(rec2.Body.Bytes(), &depResp); err != nil {
+		t.Fatalf("unmarshaling dependents response: %v", err)
+	}
+	if len(depResp.Dependents) != 1 || depResp.Dependents[0] != apiID {
+		t.Errorf("Dependents(auth-lib) = %v, want [%q]", depResp.Dependents, apiID)
+	}
+}
+
+func TestAddDependencyRejectsUnknownProject(t *testing.T) {
+	srv := newTestServer(t)
+	mux := srv.Router()
+
+	depBody, _ := json.Marshal(DependsOnRequest{DependsOnID: "does-not-exist"})
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/projects/also-does-not-exist/depends-on", bytes.NewReader(depBody))
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != 404 {
+		t.Errorf("status = %d, want 404, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestAddDependencyRejectsCycle(t *testing.T) {
+	srv := newTestServer(t)
+	mux := srv.Router()
+
+	create := func(name string) string {
+		body, _ := json.Marshal(NewProjectRequest{Name: name, Language: "go"})
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/projects", bytes.NewReader(body))
+		mux.ServeHTTP(rec, req)
+		var resp NewProjectResponse
+		_ = json.Unmarshal(rec.Body.Bytes(), &resp)
+		return resp.Project.ID
+	}
+
+	aID := create("proj-a")
+	bID := create("proj-b")
+
+	link := func(from, to string) int {
+		body, _ := json.Marshal(DependsOnRequest{DependsOnID: to})
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/projects/"+from+"/depends-on", bytes.NewReader(body))
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+
+	if code := link(aID, bID); code != 201 {
+		t.Fatalf("a->b link status = %d, want 201", code)
+	}
+	if code := link(bID, aID); code != 409 {
+		t.Errorf("b->a link (cycle) status = %d, want 409", code)
 	}
 }
