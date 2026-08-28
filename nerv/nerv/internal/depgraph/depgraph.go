@@ -47,6 +47,10 @@ type Policy struct {
 	// AllowZeroMajor permits 0.x dependencies when true. Default (false)
 	// matches the "no unpinned 0.x" rule from the Brazil-resolver study.
 	AllowZeroMajor bool
+	// Checker, if non-nil, is consulted after semver validation to reject
+	// exactly-pinned versions that are on a known-vulnerable list. Nil
+	// means "skip the vulnerability check" — fully backward compatible.
+	Checker VulnerabilityChecker
 }
 
 // Enforcer validates dependency constraints against a Policy.
@@ -83,6 +87,12 @@ func (e *Enforcer) Validate(dep Dependency) error {
 
 	if major == 0 && !e.policy.AllowZeroMajor {
 		return fmt.Errorf("depgraph: dependency %q constraint %q: %w", dep.Name, c, ErrZeroMajorNotAllowed)
+	}
+
+	if e.policy.Checker != nil {
+		if vulnerable, reason := e.policy.Checker.IsVulnerable(dep.Name, c); vulnerable {
+			return fmt.Errorf("depgraph: dependency %q constraint %q (%s): %w", dep.Name, c, reason, ErrVulnerableVersion)
+		}
 	}
 
 	return nil

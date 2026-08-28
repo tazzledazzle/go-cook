@@ -4,6 +4,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -75,18 +76,47 @@ Usage:
   nervctl serve-metrics [--addr=:9090]`)
 }
 
+// buildRegistry builds a Registrar backed by Postgres if NERV_POSTGRES_DSN
+// is set, otherwise falls back to the embedded BoltDB store. This is a
+// deliberate demonstration of the Registrar interface making storage
+// swappable without touching any caller.
+func buildRegistry(dataDir string) (registry.Registrar, func(), error) {
+	if dsn := os.Getenv("NERV_POSTGRES_DSN"); dsn != "" {
+		reg, err := registry.NewPostgresStore(context.Background(), dsn)
+		if err != nil {
+			return nil, nil, fmt.Errorf("building postgres registry: %w", err)
+		}
+		log.Println("nervctl: using Postgres-backed registry")
+		return reg, func() {
+			if err := reg.Close(); err != nil {
+				log.Printf("nervctl: closing postgres registry: %v", err)
+			}
+		}, nil
+	}
+
+	reg, err := registry.NewBoltStore(filepath.Join(dataDir, "registry.db"))
+	if err != nil {
+		return nil, nil, fmt.Errorf("building bolt registry: %w", err)
+	}
+	return reg, func() {
+		if err := reg.Close(); err != nil {
+			log.Printf("nervctl: closing bolt registry: %v", err)
+		}
+	}, nil
+}
+
 // buildApp wires every package into a working app instance, backed by
 // two BoltDB files under dataDir. Returns a close function that shuts
 // down every store cleanly.
 func buildApp(dataDir string) (*app, func(), error) {
-	reg, err := registry.NewBoltStore(filepath.Join(dataDir, "registry.db"))
+	reg, closeReg, err := buildRegistry(dataDir)
 	if err != nil {
-		return nil, nil, fmt.Errorf("building registry: %w", err)
+		return nil, nil, err
 	}
 
 	pointers, err := template.NewBoltPointerStore(filepath.Join(dataDir, "pointers.db"))
 	if err != nil {
-		_ = reg.Close()
+		closeReg()
 		return nil, nil, fmt.Errorf("building pointer store: %w", err)
 	}
 
