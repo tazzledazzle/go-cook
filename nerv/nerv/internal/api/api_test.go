@@ -185,3 +185,25 @@ func TestHealthz(t *testing.T) {
 		t.Errorf("status = %d, want 200", rec.Code)
 	}
 }
+
+func TestCreateProjectResponseHasNonZeroCreatedAt(t *testing.T) {
+	srv := newTestServer(t)
+	mux := srv.Router()
+
+	body, _ := json.Marshal(NewProjectRequest{Name: "svc-c", Language: "go"})
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/projects", bytes.NewReader(body))
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != 201 {
+		t.Fatalf("status = %d, want 201, body = %s", rec.Code, rec.Body.String())
+	}
+
+	var resp NewProjectResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshaling response: %v", err)
+	}
+	if resp.Project.CreatedAt.IsZero() {
+		t.Error("Project.CreatedAt in POST response is zero, want it populated at creation time")
+	}
+}

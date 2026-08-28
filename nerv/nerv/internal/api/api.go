@@ -124,6 +124,7 @@ func (s *Server) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 		TemplateName:    "service",
 		TemplateVersion: "v1",
 		Path:            projectPath,
+		CreatedAt:       time.Now().UTC(),
 	}
 	if err := s.Reg.Register(project); err != nil {
 		writeError(w, http.StatusInternalServerError, fmt.Sprintf("registering project: %v", err))
