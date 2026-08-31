@@ -1,8 +1,7 @@
-// Package api exposes Nerv's project-generation workflow over HTTP,
-// composing the registry, template, depgraph, cihook, and metrics
-// packages behind a small REST surface. Unlike the CLI (one process
-// per invocation), this server is long-running, so the depgraph
-// resolution cache persists across requests.
+// Package api exposes Nerv's Module Creation Service and Module
+// Directory Service over HTTP. Handlers here are deliberately thin:
+// they translate HTTP <-> Go types and delegate all real work to
+// creation.Service and directory.Service.
 package api
 
 import (
@@ -10,25 +9,18 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"path/filepath"
-	"time"
 
-	"tazzledazzle/nerv/nerv/internal/cihook"
+	"tazzledazzle/nerv/nerv/internal/creation"
 	"tazzledazzle/nerv/nerv/internal/depgraph"
-	"tazzledazzle/nerv/nerv/internal/metrics"
+	"tazzledazzle/nerv/nerv/internal/directory"
 	"tazzledazzle/nerv/nerv/internal/registry"
-	"tazzledazzle/nerv/nerv/internal/template"
 )
 
-// Server bundles every dependency the HTTP handlers need.
+// Server bundles the two services and the project-to-project graph.
 type Server struct {
-	Reg      registry.Registrar
-	Engine   *template.Engine
-	Resolver *depgraph.Resolver
-	Graph    *depgraph.Graph
-	Hook     cihook.CIHook
-	Metrics  *metrics.Metrics
-	DestRoot string // root directory generated projects are written under
+	Creation  *creation.Service
+	Directory *directory.Service
+	Graph     *depgraph.Graph
 }
 
 // NewProjectRequest is the JSON body for POST /projects.
@@ -38,7 +30,6 @@ type NewProjectRequest struct {
 	Deps     []DepRequest `json:"deps,omitempty"`
 }
 
-// DepRequest is one entry in NewProjectRequest.Deps.
 type DepRequest struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
@@ -57,13 +48,18 @@ type DependsOnRequest struct {
 	DependsOnID string `json:"depends_on_id"`
 }
 
-// errorResponse is the JSON body for any non-2xx response.
+// SearchResponse is returned by GET /search.
+type SearchResponse struct {
+	Query           string             `json:"query"`
+	Modules         []registry.Project `json:"modules"`
+	CodeSearchLinks map[string]string  `json:"code_search_links,omitempty"`
+}
+
 type errorResponse struct {
 	Error string `json:"error"`
 }
 
-// Router builds the *http.ServeMux exposing every Nerv HTTP endpoint,
-// including the Prometheus /metrics endpoint from the metrics package.
+// Router builds the *http.ServeMux exposing every Nerv HTTP endpoint.
 func (s *Server) Router() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
@@ -71,7 +67,7 @@ func (s *Server) Router() *http.ServeMux {
 	mux.HandleFunc("GET /projects", s.handleListProjects)
 	mux.HandleFunc("POST /projects/{id}/depends-on", s.handleAddDependency)
 	mux.HandleFunc("GET /projects/{id}/dependents", s.handleGetDependents)
-	mux.Handle("GET /metrics", s.Metrics.Handler())
+	mux.HandleFunc("GET /search", s.handleSearch)
 	return mux
 }
 
@@ -85,73 +81,42 @@ func (s *Server) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body: %v", err))
 		return
 	}
-	if req.Name == "" || req.Language == "" {
-		writeError(w, http.StatusBadRequest, "name and language are required")
-		return
+
+	deps := make([]depgraph.Dependency, len(req.Deps))
+	for i, d := range req.Deps {
+		deps[i] = depgraph.Dependency{Name: d.Name, Constraint: d.Version}
 	}
 
-	projectID := fmt.Sprintf("%s-%d", req.Name, time.Now().UnixNano())
-	projectPath := filepath.Join(s.DestRoot, req.Name)
-
-	var resolvedDeps map[string]string
-	var cacheHit bool
-	if len(req.Deps) > 0 {
-		deps := make([]depgraph.Dependency, len(req.Deps))
-		for i, d := range req.Deps {
-			deps[i] = depgraph.Dependency{Name: d.Name, Constraint: d.Version}
-		}
-
-		result, err := s.Resolver.Resolve(projectID, deps)
-		if err != nil {
-			writeError(w, http.StatusUnprocessableEntity, err.Error())
-			return
-		}
-		resolvedDeps = result.Resolved
-		cacheHit = result.CacheHit
-		s.Metrics.RecordResolution(cacheHit)
-	}
-
-	start := time.Now()
-	err := s.Engine.Render("service", projectPath, map[string]interface{}{"ServiceName": req.Name})
+	result, err := s.Creation.Create(creation.Request{
+		Name:     req.Name,
+		Language: req.Language,
+		Deps:     deps,
+	})
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, fmt.Sprintf("rendering template: %v", err))
+		// Policy violations (dependency resolution failures) are the
+		// client's fault; anything else is treated as a server error.
+		status := http.StatusInternalServerError
+		if req.Name == "" || req.Language == "" {
+			status = http.StatusBadRequest
+		} else if len(req.Deps) > 0 {
+			status = http.StatusUnprocessableEntity
+		}
+		writeError(w, status, err.Error())
 		return
 	}
-	s.Metrics.ObserveRenderDuration(time.Since(start).Seconds())
-
-	pipelineRef, err := s.Hook.TriggerPipeline(projectPath, req.Language)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, fmt.Sprintf("wiring CI hook: %v", err))
-		return
-	}
-
-	project := registry.Project{
-		ID:              projectID,
-		Name:            req.Name,
-		Language:        req.Language,
-		TemplateName:    "service",
-		TemplateVersion: "v1",
-		Path:            projectPath,
-		CreatedAt:       time.Now().UTC(),
-	}
-	if err := s.Reg.Register(project); err != nil {
-		writeError(w, http.StatusInternalServerError, fmt.Sprintf("registering project: %v", err))
-		return
-	}
-	s.Metrics.RecordProjectGenerated(req.Language)
 
 	writeJSON(w, http.StatusCreated, NewProjectResponse{
-		Project:        project,
-		ResolvedDeps:   resolvedDeps,
-		DepsCacheHit:   cacheHit,
-		PipelineConfig: pipelineRef,
+		Project:        result.Project,
+		ResolvedDeps:   result.ResolvedDeps,
+		DepsCacheHit:   result.DepsCacheHit,
+		PipelineConfig: result.PipelineConfig,
 	})
 }
 
 func (s *Server) handleListProjects(w http.ResponseWriter, r *http.Request) {
 	lang := r.URL.Query().Get("lang")
 
-	projects, err := s.Reg.List(lang)
+	projects, err := s.Directory.List(lang)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, fmt.Sprintf("listing projects: %v", err))
 		return
@@ -163,16 +128,27 @@ func (s *Server) handleListProjects(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, projects)
 }
 
-func writeJSON(w http.ResponseWriter, status int, body interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(body); err != nil {
-		log.Printf("api: encoding response: %v", err)
+func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		writeError(w, http.StatusBadRequest, "query parameter \"q\" is required")
+		return
 	}
-}
 
-func writeError(w http.ResponseWriter, status int, msg string) {
-	writeJSON(w, status, errorResponse{Error: msg})
+	modules, err := s.Directory.Search(query)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, fmt.Sprintf("searching: %v", err))
+		return
+	}
+	if modules == nil {
+		modules = []registry.Project{}
+	}
+
+	writeJSON(w, http.StatusOK, SearchResponse{
+		Query:           query,
+		Modules:         modules,
+		CodeSearchLinks: s.Directory.CodeSearchLinks(query),
+	})
 }
 
 func (s *Server) handleAddDependency(w http.ResponseWriter, r *http.Request) {
@@ -188,19 +164,16 @@ func (s *Server) handleAddDependency(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Both endpoints must be real, registered projects — otherwise the
-	// graph could reference projects that were never actually generated.
-	if _, err := s.Reg.Get(fromID); err != nil {
+	if _, err := s.Directory.Get(fromID); err != nil {
 		writeError(w, http.StatusNotFound, fmt.Sprintf("project %q not found: %v", fromID, err))
 		return
 	}
-	if _, err := s.Reg.Get(req.DependsOnID); err != nil {
+	if _, err := s.Directory.Get(req.DependsOnID); err != nil {
 		writeError(w, http.StatusNotFound, fmt.Sprintf("project %q not found: %v", req.DependsOnID, err))
 		return
 	}
 
 	if err := s.Graph.AddEdge(fromID, req.DependsOnID); err != nil {
-		// Cycle and self-dependency are client errors, not server errors.
 		writeError(w, http.StatusConflict, err.Error())
 		return
 	}
@@ -214,7 +187,7 @@ func (s *Server) handleAddDependency(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleGetDependents(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
-	if _, err := s.Reg.Get(id); err != nil {
+	if _, err := s.Directory.Get(id); err != nil {
 		writeError(w, http.StatusNotFound, fmt.Sprintf("project %q not found: %v", id, err))
 		return
 	}
@@ -228,4 +201,16 @@ func (s *Server) handleGetDependents(w http.ResponseWriter, r *http.Request) {
 		"project_id": id,
 		"dependents": dependents,
 	})
+}
+
+func writeJSON(w http.ResponseWriter, status int, body interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(body); err != nil {
+		log.Printf("api: encoding response: %v", err)
+	}
+}
+
+func writeError(w http.ResponseWriter, status int, msg string) {
+	writeJSON(w, status, errorResponse{Error: msg})
 }
